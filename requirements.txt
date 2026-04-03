@@ -5,3 +5,9 @@ scipy
 seaborn
 statsmodels
 requests
+geopandas
+tqdm
+psutil
+ray
+rasterio
+openpyxl
