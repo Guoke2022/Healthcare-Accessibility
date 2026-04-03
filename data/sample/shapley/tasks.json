@@ -1,0 +1,14 @@
+[
+  {
+    "name": "accessibility",
+    "baseline_csv": "data/sample/shapley/baseline_accessibility.csv",
+    "shapley_csv": "data/sample/shapley/scenario_accessibility.csv",
+    "value_cols": ["pop_median"]
+  },
+  {
+    "name": "inequality_acc",
+    "baseline_csv": "data/sample/shapley/baseline_accessibility.csv",
+    "shapley_csv": "data/sample/shapley/scenario_accessibility.csv",
+    "value_cols": ["pop_gini", "pop_theil", "pop_MLD"]
+  }
+]
