@@ -26,7 +26,7 @@ This public repository includes code for the following analytical components:
 2. Concentration index analysis  
 3. SEE/CIE panel construction and regression analysis  
 4. Shapley decomposition and waterfall plotting  
-5. Accessibility dataset production on Linux (`build_accessibility_dataset_linux.py`)
+5. Accessibility dataset production
 
 ## Installation
 
