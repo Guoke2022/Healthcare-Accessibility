@@ -1,8 +1,8 @@
-# Healthcare expansion improves accessibility but yields uneven equity returns across Chinese cities
+# Accessibility gains and uneven equity returns from healthcare expansion in China
 
 Code and sample data for the manuscript:
 
-**“Healthcare expansion improves accessibility but yields uneven equity returns across Chinese cities”**
+**“Accessibility gains and uneven equity returns from healthcare expansion in China”**
 
 ## Overview
 
