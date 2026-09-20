@@ -1,0 +1,25 @@
+# Python cache / test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local editor settings
+.vscode/
+.idea/
+
+# Public reproduction staging and generated outputs
+.reproduction_work/
+outputs/*
+!outputs/README.md
+
+# Rust build artifacts
+osm_batch_router_v2/target/
+
+# Local OS / temporary files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak

@@ -9,6 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 REPO_ROOT = Path(__file__).resolve().parent
 CODE_ROOT = REPO_ROOT / "code"
 REPRO_ROOT = REPO_ROOT / "data" / "reproduction"
@@ -27,6 +29,7 @@ FIGURE_SCRIPTS = [
     "fig3_2_multiscale_accessibility_gap.py",
     "fig4_1_frequency_distribution_2014_2024.py",
     "fig4_2_ci_plots.py",
+    "recompute_shapley_from_scenarios.py",
     "plot_shapley_decomposition.py",
 ]
 
@@ -44,31 +47,97 @@ def _find_boundary(layer: str) -> Path | None:
     return path if path.exists() else None
 
 
+def _validate_csv_columns(path: Path, required_columns: set[str], errors: list[str]) -> pd.DataFrame | None:
+    if not path.exists():
+        errors.append(f"missing release input: {path.relative_to(REPO_ROOT)}")
+        return None
+    try:
+        df = pd.read_csv(path, encoding="utf-8-sig")
+    except Exception as exc:
+        errors.append(f"cannot read {path.relative_to(REPO_ROOT)}: {exc}")
+        return None
+    missing = sorted(required_columns - set(df.columns))
+    if missing:
+        errors.append(f"{path.relative_to(REPO_ROOT)} missing columns: {missing}")
+    if df.empty:
+        errors.append(f"{path.relative_to(REPO_ROOT)} is empty")
+    return df
+
+
+def _validate_year_endpoints(df: pd.DataFrame | None, path: Path, errors: list[str]) -> None:
+    if df is None or "Year" not in df.columns:
+        return
+    years = set(pd.to_numeric(df["Year"], errors="coerce").dropna().astype(int).tolist())
+    for year in (2014, 2024):
+        if year not in years:
+            errors.append(f"{path.relative_to(REPO_ROOT)} does not contain year {year}")
+
+
 def validate_release_inputs() -> list[str]:
     errors: list[str] = []
-    required = [
-        REPRO_ROOT / "2_2_multiscale_analysis" / "travel_time" / "national_travel_time_stats.csv",
-        REPRO_ROOT / "2_2_multiscale_analysis" / "travel_time" / "provincial_travel_time_stats.csv",
-        REPRO_ROOT / "2_2_multiscale_analysis" / "travel_time" / "city_travel_time_stats.csv",
-        REPRO_ROOT / "2_2_multiscale_analysis" / "travel_time" / "county_travel_time_stats.csv",
-        REPRO_ROOT / "2_2_multiscale_analysis" / "accessibility" / "national_acc_stats.csv",
-        REPRO_ROOT / "2_2_multiscale_analysis" / "accessibility" / "provincial_acc_stats.csv",
-        REPRO_ROOT / "2_2_multiscale_analysis" / "accessibility" / "city_acc_stats.csv",
-        REPRO_ROOT / "2_2_multiscale_analysis" / "accessibility" / "county_acc_stats.csv",
-        REPRO_ROOT / "2_2_multiscale_analysis" / "accessibility" / "city_level_acc_stats.csv",
-        REPRO_ROOT / "2_2_multiscale_analysis" / "derived_groups" / "Coastal_Inland_acc_stats.csv",
-        REPRO_ROOT / "2_2_multiscale_analysis" / "derived_groups" / "Urban_Rural_acc_stats.csv",
-        REPRO_ROOT / "3_2_ci_analysis" / "acc_CI_results_by_GDP.csv",
-        REPRO_ROOT / "3_2_ci_analysis" / "acc_CI_results_by_GDP_region.csv",
-        REPRO_ROOT / "3_2_ci_analysis" / "acc_CI_results_by_GDP_city_level.csv",
-        REPRO_ROOT / "3_2_ci_analysis" / "plot_inputs" / "kde_curves.csv",
-        REPRO_ROOT / "3_2_ci_analysis" / "plot_inputs" / "ci_curve_points.csv",
-        REPRO_ROOT / "4_2_shapley_decomposition" / "shapley_summary.csv",
-        REPRO_ROOT / "see_cie_regression_panel" / "city_2014_2024_index.csv",
-    ]
-    for path in required:
-        if not path.exists():
-            errors.append(f"missing release input: {path.relative_to(REPO_ROOT)}")
+
+    csv_requirements: dict[Path, set[str]] = {
+        REPRO_ROOT / "2_2_multiscale_analysis" / "travel_time" / "national_travel_time_stats.csv": {"Year", "pop_median"},
+        REPRO_ROOT / "2_2_multiscale_analysis" / "travel_time" / "provincial_travel_time_stats.csv": {"Year", "省级", "省级码", "pop_median", "pop_pct_lt_60"},
+        REPRO_ROOT / "2_2_multiscale_analysis" / "travel_time" / "city_travel_time_stats.csv": {"Year", "地级", "地级码", "pop_median"},
+        REPRO_ROOT / "2_2_multiscale_analysis" / "travel_time" / "county_travel_time_stats.csv": {"Year", "县级", "县级码", "pop_median"},
+        REPRO_ROOT / "2_2_multiscale_analysis" / "accessibility" / "national_acc_stats.csv": {"Year", "pop_median", "pop_gini", "pop_theil", "pop_atkinson_05"},
+        REPRO_ROOT / "2_2_multiscale_analysis" / "accessibility" / "provincial_acc_stats.csv": {"Year", "省级", "省级码", "pop_median"},
+        REPRO_ROOT / "2_2_multiscale_analysis" / "accessibility" / "city_acc_stats.csv": {"Year", "地级", "地级码", "pop_median"},
+        REPRO_ROOT / "2_2_multiscale_analysis" / "accessibility" / "county_acc_stats.csv": {"Year", "县级", "县级码", "pop_median"},
+        REPRO_ROOT / "2_2_multiscale_analysis" / "accessibility" / "city_level_acc_stats.csv": {"Year", "city_level", "pop_median"},
+        REPRO_ROOT / "2_2_multiscale_analysis" / "derived_groups" / "Coastal_Inland_acc_stats.csv": {"Year", "Coastal_Inland", "pop_median"},
+        REPRO_ROOT / "2_2_multiscale_analysis" / "derived_groups" / "Urban_Rural_acc_stats.csv": {"Year", "Urban_Rural", "pop_median"},
+        REPRO_ROOT / "3_2_ci_analysis" / "acc_CI_results_by_GDP.csv": {"year", "CI"},
+        REPRO_ROOT / "3_2_ci_analysis" / "acc_CI_results_by_GDP_region.csv": {"year", "region", "CI"},
+        REPRO_ROOT / "3_2_ci_analysis" / "acc_CI_results_by_GDP_city_level.csv": {"year", "city_level", "CI"},
+        REPRO_ROOT / "3_2_ci_analysis" / "plot_inputs" / "kde_curves.csv": {"variable", "year", "x", "density"},
+        REPRO_ROOT / "3_2_ci_analysis" / "plot_inputs" / "ci_curve_points.csv": {"curve_family", "group_name", "rank_var", "year", "x", "y", "ci"},
+        REPRO_ROOT / "4_2_shapley_decomposition" / "scenario_stats.csv": {"scenario", "pop_median", "pop_gini", "pop_theil", "pop_atkinson_05"},
+        REPRO_ROOT / "4_2_shapley_decomposition" / "shapley_summary.csv": {"outcome", "factor", "contribution_abs", "share_pct"},
+        REPRO_ROOT / "see_cie_regression_panel" / "city_2014_2024_index.csv": {
+            "省级", "地级", "city_level", "city_SEE", "city_CIE", "city_TotalNetExpansion",
+            "acc_2014", "acc_2024", "gini_2014", "gini_2024", "theil_2014", "theil_2024",
+            "atkinson_05_2014", "atkinson_05_2024", "ln_FiscalRevenue_pc_2014",
+        },
+    }
+
+    loaded: dict[Path, pd.DataFrame | None] = {}
+    for path, columns in csv_requirements.items():
+        loaded[path] = _validate_csv_columns(path, columns, errors)
+
+    for path, df in loaded.items():
+        # Urban/rural summaries intentionally cover only the GURS-supported years
+        # (2014-2016 and 2019-2021), so they do not have a 2024 endpoint.
+        if "Urban_Rural_acc_stats.csv" in path.name:
+            continue
+        if "2_2_multiscale_analysis" in str(path):
+            _validate_year_endpoints(df, path, errors)
+        elif "acc_CI_results" in path.name and df is not None and "year" in df.columns:
+            years = set(pd.to_numeric(df["year"], errors="coerce").dropna().astype(int).tolist())
+            for year in (2014, 2024):
+                if year not in years:
+                    errors.append(f"{path.relative_to(REPO_ROOT)} does not contain year {year}")
+
+    scenario_path = REPRO_ROOT / "4_2_shapley_decomposition" / "scenario_stats.csv"
+    scenario_df = loaded.get(scenario_path)
+    if scenario_df is not None and "scenario" in scenario_df.columns:
+        expected = {f"A{r}{p}{h}" for r in (0, 1) for p in (0, 1) for h in (0, 1)}
+        actual = set(scenario_df["scenario"].astype(str))
+        if actual != expected or len(scenario_df) != 8:
+            errors.append(
+                "Shapley scenario table must contain exactly A000-A111 once each; "
+                f"missing={sorted(expected-actual)}, extra={sorted(actual-expected)}, rows={len(scenario_df)}"
+            )
+        elif scenario_df["scenario"].astype(str).duplicated().any():
+            errors.append("Shapley scenario table contains duplicate scenario codes")
+
+    panel_path = REPRO_ROOT / "see_cie_regression_panel" / "city_2014_2024_index.csv"
+    panel_df = loaded.get(panel_path)
+    if panel_df is not None and {"省级", "地级"}.issubset(panel_df.columns):
+        duplicates = panel_df.duplicated(["省级", "地级"], keep=False)
+        if duplicates.any():
+            errors.append(f"SEE/CIE panel contains {int(duplicates.sum())} duplicate province-city rows")
 
     for layer in ["province", "city", "county"]:
         shp = _find_boundary(layer)
@@ -117,10 +186,6 @@ def stage_inputs() -> None:
     )
     _replace_tree(REPRO_ROOT / "4_2_shapley_decomposition", WORK_ROOT / "4_2_shapley_decomposition")
     _replace_tree(REPRO_ROOT / "see_cie_regression_panel", WORK_ROOT / "see_cie_regression_panel")
-    shutil.copy2(
-        WORK_ROOT / "4_2_shapley_decomposition" / "shapley_summary.csv",
-        WORK_ROOT / "shapley_summary.csv",
-    )
 
 
 def runtime_env() -> dict[str, str]:

@@ -267,7 +267,9 @@ REQUIRE_COMPLETE_RUN_WHEN_UNFILTERED = True
 # =============================================================================
 
 
-CPU_BUDGET = 100
+CPU_BUDGET = int(os.environ.get("NC_CPU_BUDGET", "100"))
+if CPU_BUDGET < 1:
+    raise ValueError("NC_CPU_BUDGET 必须 >= 1")
 YEAR_PARALLEL_WORKERS = int(os.environ.get("NC_YEAR_WORKERS", min(4, len(YEARS), max(1, CPU_BUDGET))))
 if YEAR_PARALLEL_WORKERS < 1:
     raise ValueError("NC_YEAR_WORKERS 必须 >= 1")

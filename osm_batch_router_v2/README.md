@@ -1,55 +1,58 @@
 # osm_batch_router_v2
 
-Rust 批量路由器，为 NC 医疗可达性 pipeline 的 `1_1_build_travel_matrix.py` 与 `0_3_osm_road_quality_audit.py` 提供高性能 OSM routing。
+This directory contains the Rust batch router used by the upstream healthcare-accessibility workflow, primarily through `code/1_1_build_travel_matrix.py`.
 
-## 正式 router (`src/main.rs`)
+The public compact reproduction workflow (`python reproduce.py`) does not rebuild national road graphs or travel matrices, so compiling the router is not required for reproducing the released downstream results.
 
-输入：
+## Router source
 
-1. 省级 OSM PBF；
-2. population grid binary；
-3. hospital binary；
-4. 输出目录；
-5. travel-time cutoff；
-6. maximum speed cap；
-7. undirected flag；
-8. Rayon threads；
-9. speed profile list。
+The current router is implemented in `src/main.rs` as the `osm_batch_router` binary declared by `Cargo.toml`.
 
-Python 会自动调用，不建议手工拼 CLI。
+It consumes:
 
-### Snapping
+1. an OSM PBF road-network file;
+2. a binary population-grid point file;
+3. a binary hospital point file;
+4. an output directory;
+5. a travel-time cutoff;
+6. a maximum speed cap;
+7. an undirected-routing flag;
+8. the Rayon thread count;
+9. one or more routing speed profiles;
+10. component-rescue settings used by the Python pipeline.
 
-没有 snap-distance gate。
+The Python routing stage assembles these arguments automatically; manual invocation is normally unnecessary.
 
-- `motorway`：不进入 edge-snap segment index，只能通过路网 node 接入；
-- `motorway_link`：允许 edge snap；
-- 其他可驾驶 road segment：允许 edge snap。
+## Snapping semantics
 
-对合法 edge snap，router 保存 segment id 与投影 fraction，并按 fraction 把 access cost 分配到路段两端。无需显式复制整张 augmented graph，即可得到与 virtual access point 等价的路径成本；同一 segment 内的 origin/destination 直接计算局部路段成本。
+There is no hard snap-distance gate.
 
-### Routing
+- `motorway`: interior edge snapping is disabled; access is through routable network nodes.
+- `motorway_link`: edge snapping is allowed.
+- other eligible motor-vehicle road segments: edge snapping is allowed.
 
-- 每个医院一次 bounded Dijkstra，输出 cutoff 内稀疏 hospital-grid travel records；
-- 同一 snapped network 另做 multi-source shortest path，输出每个 grid 的 nearest-hospital time；
-- snap distance 仅写入 QC，不参与筛除。
+For a legal edge snap, the router stores the segment ID and projected fraction and distributes access cost to the segment endpoints according to that fraction. This represents a virtual access point without explicitly duplicating the whole augmented graph. Origin/destination pairs snapped to the same segment can use the direct within-segment cost when directionality permits.
 
-## OSM QC helper (`src/bin/road_quality_audit.rs`)
+Snap distance is retained for quality control but is not itself used as an exclusion threshold.
 
-用于独立 `0_3_osm_road_quality_audit.py`。它同时保留：
+## Routing outputs
 
-- raw nearest-node distance；
-- raw nearest-edge distance；
-- 与正式 router 一致的 legal street access；
-- legal access 下的 nearest-hospital routing。
+For each configured speed profile, the router:
 
-因此 coverage diagnostics 与正式可达性模型可以区分，但 routing 语义保持一致。
+- performs hospital-centred bounded shortest-path searches and writes sparse hospital-to-grid travel records within the requested cutoff;
+- performs a multi-source shortest-path calculation on the same snapped network to obtain nearest-hospital travel time for every reachable grid;
+- writes router, road-class, snapping, and connected-component diagnostics used by the upstream Python workflow.
 
 ## Build
 
-```powershell
-cargo build --release --bin osm_batch_router
-cargo build --release --bin road_quality_audit
+From this directory:
+
+```bash
+cargo build --release
 ```
 
-Python 入口在发现源码更新时会自动 build。
+The resulting executable is built as `osm_batch_router` (with the platform-appropriate executable suffix). The Python pipeline can also build the binary automatically when required.
+
+## Notes
+
+The router source is provided for transparency and for users who wish to reconstruct the large-scale upstream travel-time workflow from raw OSM and population/hospital inputs. No separate `road_quality_audit` Rust binary is part of the current repository release.

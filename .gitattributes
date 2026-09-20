@@ -1,0 +1,25 @@
+# Normalize text files across Windows/Linux while keeping binary geospatial files untouched.
+* text=auto eol=lf
+
+*.py   text eol=lf
+*.md   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.csv  text eol=lf
+*.toml text eol=lf
+*.rs   text eol=lf
+*.prj  text eol=lf
+*.cpg  text eol=lf
+
+*.shp binary
+*.shx binary
+*.dbf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+*.zip binary
+*.xlsx binary
+*.docx binary
+*.parquet binary

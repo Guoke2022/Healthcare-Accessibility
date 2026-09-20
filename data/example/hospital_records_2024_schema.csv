@@ -1,1 +1,12 @@
-name,beds,lng,lat,province,region,area,grade,type,construction_time,3A_year
+column,required_for_upstream,type,description
+name,yes,string,Hospital or campus record name used for longitudinal matching and reporting.
+beds,yes,numeric,Available bed capacity assigned to this spatial service record for the year.
+lng,yes,numeric,Longitude in decimal degrees.
+lat,yes,numeric,Latitude in decimal degrees.
+province,recommended,string,Province-level administrative name used for validation and spatial checks.
+region,no,string,Prefecture-level city or equivalent administrative label when available.
+area,no,string,County/district-level administrative label when available.
+grade,no,string,Hospital accreditation grade recorded in the annual source table.
+type,no,string,Hospital institutional type when available.
+construction_time,no,string,Opening/construction timing field retained from the curated source table when available.
+3A_year,no,integer,First verified tertiary Grade A accreditation year when available.

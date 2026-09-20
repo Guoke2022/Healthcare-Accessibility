@@ -1,6 +1,6 @@
-# Accessibility gains and uneven equity returns from healthcare expansion in China
+# Accessibility gains and uneven inequality reductions from hospital expansion in China
 
-This repository contains the code and compact reproduction data for the manuscript **“Accessibility gains and uneven equity returns from healthcare expansion in China.”** The public workflow is designed to reproduce the reported downstream statistics, regression results and manuscript figures without redistributing multi-gigabyte population, road-network and travel-matrix inputs.
+This repository contains the code and compact reproduction data for the manuscript **“Accessibility gains and uneven inequality reductions from hospital expansion in China.”** The public workflow is designed to reproduce the reported downstream statistics, the main SEE/CIE regression results, the main-text figure components, and the Shapley decomposition figure without redistributing multi-gigabyte population, road-network, and travel-matrix inputs.
 
 ## Reproducing the results
 
@@ -11,13 +11,13 @@ conda env create -f environment.yml
 conda activate healthcare-accessibility
 ```
 
-Check that all released inputs are present:
+Check that all released inputs are present and have the required columns/scenario structure:
 
 ```bash
 python reproduce.py --check-only
 ```
 
-Run the complete public reproduction workflow:
+Run the public reproduction workflow:
 
 ```bash
 python reproduce.py
@@ -30,7 +30,7 @@ python reproduce.py --section figures   # Figures 1–4 and Shapley decompositio
 python reproduce.py --section see-cie   # SEE/CIE regressions and Figure 5
 ```
 
-Generated files are written only to `outputs/`. Temporary staged inputs and intermediate files are written to `.reproduction_work/`; both locations are ignored by Git. To remove all generated files:
+Generated files are written only to `outputs/`. Temporary staged inputs and intermediate files are written to `.reproduction_work/`; both locations are excluded from version control, while `outputs/README.md` remains tracked. To remove all generated files:
 
 ```bash
 python reproduce.py --clean-only
@@ -46,7 +46,7 @@ The released inputs are under `data/reproduction/`:
 data/reproduction/
 ├─ 2_2_multiscale_analysis/          # National/province/city/county summary statistics
 ├─ 3_2_ci_analysis/                  # GDP-ranked CI tables and compact Figure 4 inputs
-├─ 4_2_shapley_decomposition/        # Shapley summary and scenario-level audit tables
+├─ 4_2_shapley_decomposition/        # Eight scenario summaries plus reference Shapley output
 ├─ see_cie_regression_panel/         # Analysis-ready city-level SEE/CIE panel
 └─ static/administrative_boundaries/ # Fixed 2023 province/city/county boundaries
 ```
@@ -55,36 +55,41 @@ The public workflow starts from these compact intermediate products. It does not
 
 ### Hospital data
 
-The complete longitudinal hospital bed/campus database is not included in this release. `data/example/` documents the hospital input schema, and `tools/create_hospital_example.py` can generate a fixed-seed 100-record example from the private 2024 table. Example records are not used by `reproduce.py` and cannot reproduce the national estimates.
+The complete longitudinal hospital bed/campus database is not included in this release. `data/example/` contains a schema description and a small synthetic example showing the expected annual hospital-table structure. `tools/create_hospital_example.py` is an author-side utility that can draw a deterministic sample from a local 2024 hospital table for manual inspection before release. Example records are not used by `reproduce.py` and cannot reproduce the national estimates.
 
 ### Figure 4 inputs
 
-The ~1.16 GB grid-level CI-matched dataset is not released. Figure 4 instead uses compact precomputed KDE curves and GDP-ranked concentration-curve points under `data/reproduction/3_2_ci_analysis/plot_inputs/`. The minority-share KDE remains part of Figure 4, whereas minority-ranked CI curves and CI trends are not part of the public figure workflow.
+The ~1.16 GB grid-level CI-matched dataset is not released. Figure 4 instead uses compact precomputed accessibility/GDP KDE curves and GDP-ranked concentration-curve points under `data/reproduction/3_2_ci_analysis/plot_inputs/`. Minority-share analyses reported in the Supplementary Information are not part of the default public main-figure workflow.
+
+### Shapley decomposition
+
+The public repository includes the outcome statistics for all eight endpoint/counterfactual combinations of road-network conditions, population distribution, and hospital supply (`A000`–`A111`). During reproduction, `code/recompute_shapley_from_scenarios.py` recalculates the exact three-component Shapley values from these eight scenario statistics, checks the efficiency property, compares the recalculated values with the released reference summary, and writes a newly generated `shapley_summary.csv` for plotting. The Shapley figure therefore does not rely on the released summary as its computational input.
 
 ## Repository structure
 
 ```text
 .
-├─ reproduce.py                     # Reviewer-facing reproduction entry point
+├─ reproduce.py                      # Reviewer-facing reproduction entry point
 ├─ environment.yml
 ├─ code/
-│  ├─ config.py                     # Shared configuration
-│  ├─ reconstruct_from_raw_inputs.py# Optional large-scale upstream workflow
-│  ├─ 0_*.py ... 4_*.py            # Upstream geospatial/statistical stages
+│  ├─ config.py                      # Shared configuration
+│  ├─ reconstruct_from_raw_inputs.py # Optional large-scale upstream workflow
+│  ├─ 0_*.py ... 4_*.py             # Upstream geospatial/statistical stages
+│  ├─ recompute_shapley_from_scenarios.py
 │  ├─ prepare_hospital_expansion.py
 │  ├─ build_see_cie_regression_panel.py
 │  ├─ run_see_cie_regressions.py
 │  ├─ run_province_fe_robustness.py
 │  ├─ run_spatial_robustness.py
-│  ├─ fig*.py                       # Manuscript figure scripts
+│  ├─ fig*.py                        # Main-text figure scripts
 │  └─ utils/
 ├─ data/
-│  ├─ reproduction/                 # Released reproduction inputs
-│  └─ example/                      # Hospital input schema/example materials
-├─ tests/                           # Unit tests for inequality metrics
-├─ tools/                           # Author-side release utilities
-├─ osm_batch_router_v2/             # Rust routing source
-└─ outputs/                         # Generated public reproduction outputs
+│  ├─ reproduction/                  # Released reproduction inputs
+│  └─ example/                       # Hospital schema and synthetic example
+├─ tests/                            # Unit tests for inequality and Shapley calculations
+├─ tools/                            # Author-side release utilities
+├─ osm_batch_router_v2/              # Rust routing source used by the upstream workflow
+└─ outputs/                          # Generated public reproduction outputs
 ```
 
 ## SEE/CIE analysis
@@ -104,16 +109,22 @@ Province fixed-effects and spatial-error analyses are retained as optional robus
 
 ## Optional reconstruction from raw inputs
 
-`code/reconstruct_from_raw_inputs.py` is an author/advanced-user workflow for rebuilding the analysis from raw population, OSM, hospital and socioeconomic inputs. It is **not required** for reproducing the released manuscript results and is computationally intensive. The Rust router source used by the routing stage is provided under `osm_batch_router_v2/`; compiled Rust artifacts are intentionally excluded.
+`code/reconstruct_from_raw_inputs.py` is an author/advanced-user workflow for rebuilding the analysis from raw population, OSM, hospital, and socioeconomic inputs. It is **not required** for reproducing the released manuscript results and is computationally intensive. The Rust router source used by the routing stage is provided under `osm_batch_router_v2/`; compiled Rust artifacts are intentionally excluded.
+
+The upstream workflow uses machine-dependent paths and compute settings through `NC_*` environment variables defined in `code/config.py`. In particular, `NC_CPU_BUDGET` can be used to override the author-side default CPU budget.
 
 ## Tests
 
-The inequality-metric implementation can be checked independently with:
+Run the repository tests from the repository root:
 
 ```bash
 python -m pytest -q
 ```
 
+The tests include formal checks of the population-weighted inequality metrics and synthetic checks of the exact Shapley implementation.
+
 ## Software and reproducibility notes
 
-All repository paths are relative to the repository root. Machine-specific paths can be overridden with the `NC_*` environment variables defined in `code/config.py`. Administrative maps use the released province, city and county boundary layers directly rather than reconstructing higher-level geometries from county polygons.
+All repository paths are relative to the repository root. Machine-specific paths can be overridden with the `NC_*` environment variables defined in `code/config.py`. Administrative maps use the released province, city, and county boundary layers directly rather than reconstructing higher-level geometries from county polygons.
+
+The repository uses an MIT license for the project code. Third-party data remain subject to their original licenses and terms of use.

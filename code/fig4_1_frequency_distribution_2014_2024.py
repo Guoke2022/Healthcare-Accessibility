@@ -135,11 +135,6 @@ def main() -> None:
         os.path.join(kde_dir, "accessibility_KDE_2014_2024.png"),
         "Accessibility",
     )
-    _plot(
-        "Minority_rate",
-        os.path.join(kde_dir, "minority_share_KDE_2014_2024.png"),
-        "Ethnic minority population prop. (%)",
-    )
 
 
 if __name__ == "__main__":
