@@ -1,5 +1,8 @@
 # -*- coding = utf-8 -*-
+# @Author ：YEPEI
+# @Time : 2025/6/2 17:18
 
+# @Software : PyCharm
 
 import seaborn as sns
 import pandas as pd
@@ -17,6 +20,7 @@ pd.set_option('display.float_format', '{:.2f}'.format)
 def main() -> None:
 
     df = read_stats('national', 'travel_time')
+    # print(df)
 
     LABEL_FONTSIZE = 23 # 25
     TICKS_FONTSIZE = 18 # 20

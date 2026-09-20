@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# @File : plot_barline_portrait_three_groups_combined.py
 
 import os
 import warnings
@@ -52,6 +53,8 @@ PALETTE = {
 
 
 def add_y_break_marker(ax, y_mid_data, x_pos=0.04, dx=0.018, dy=0.10, lw=1.2):
+    """Helper for add_y_break_marker."""
+
 
     trans = ax.get_yaxis_transform()  # x: axes fraction, y: data
 
@@ -62,6 +65,8 @@ def add_y_break_marker(ax, y_mid_data, x_pos=0.04, dx=0.018, dy=0.10, lw=1.2):
             transform=trans, color="black", lw=lw, clip_on=False)
 
 def _prepare_pivot_matrix(df_pivot: pd.DataFrame, group_cols, desired_years):
+    """Helper for _prepare_pivot_matrix."""
+
 
     d = df_pivot.copy()
     if "Year" not in d.columns:
@@ -89,6 +94,8 @@ def plot_pivot_barline_portrait_on_ax(
     show_x_axis=True,
     bar_h_fixed=BAR_H_FIXED
 ):
+    """Helper for plot_pivot_barline_portrait_on_ax."""
+
 
     years = mat.index.values
     n_year = len(years)

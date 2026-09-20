@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Module utilities for 1 1 build travel matrix."""
+
 
 from __future__ import annotations
 
@@ -118,7 +120,7 @@ def verify_router_protocol(exe: Path) -> None:
 
 
 def router_source_digest(source_files: list[Path]) -> str:
-
+    """Helper for router_source_digest."""
     h = hashlib.sha256()
     for src in sorted((Path(x).resolve() for x in source_files), key=lambda x: str(x).lower()):
         h.update(str(src.name).encode("utf-8"))

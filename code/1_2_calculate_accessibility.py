@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Module utilities for 1 2 calculate accessibility."""
 
 
 from __future__ import annotations
@@ -232,6 +233,8 @@ def gaussian_decay(
     t_min: np.ndarray,
     threshold_min: float,
 ) -> np.ndarray:
+    """Helper for gaussian_decay."""
+
 
     t = np.asarray(
         t_min,
@@ -412,6 +415,8 @@ def locate_grid_positions(
     query_grid_ids: np.ndarray,
     label: str,
 ) -> np.ndarray:
+    """Helper for locate_grid_positions."""
+
 
     q = np.asarray(
         query_grid_ids,
@@ -783,7 +788,7 @@ def build_s1_input_fingerprint(
 
 
 def _load_hospital_snap_diagnostics() -> pd.DataFrame:
-
+    """Helper for _load_hospital_snap_diagnostics."""
     snap_dir = TRAVEL_TIME_INPUT_ROOT / "snap_qc"
     router_dir = TRAVEL_TIME_INPUT_ROOT / "router_qc"
     if not snap_dir.exists():
@@ -859,7 +864,7 @@ _REFERENCE_HOSPITAL_CACHE: dict[int, pd.DataFrame] = {}
 
 
 def _bool_series(s: pd.Series) -> pd.Series:
-
+    """Helper for _bool_series."""
     if pd.api.types.is_bool_dtype(s.dtype):
         return s.fillna(False).astype(bool)
     num = pd.to_numeric(s, errors="coerce")
@@ -871,7 +876,7 @@ def _normalise_snap_for_fallback(
     snap: pd.DataFrame,
     hospitals: pd.DataFrame,
 ) -> pd.DataFrame:
-
+    """Helper for _normalise_snap_for_fallback."""
     if snap.empty:
         return snap.copy()
     z = snap.copy()
@@ -919,7 +924,7 @@ def _fallback_reference_dependency_files(
     profile: str,
     province_files: pd.DataFrame,
 ) -> list[Path]:
-
+    """Helper for _fallback_reference_dependency_files."""
     files: list[Path] = []
     for ref_year in _fallback_reference_years_for_context():
         hosp = PREPARED_ROOT / str(ref_year) / "hospitals.parquet"
@@ -967,6 +972,8 @@ def _build_osm_topology_fallback_plan(
     profile: str,
     hospitals: pd.DataFrame,
 ) -> pd.DataFrame:
+    """Helper for _build_osm_topology_fallback_plan."""
+
 
     cache_key = f"{profile}|{ROAD_YEAR}|{POPULATION_YEAR}|{HOSPITAL_YEAR}|{SCENARIO_LABEL}|{SERVICE_SCOPE}"
     if cache_key in _FALLBACK_PLAN_CACHE:
@@ -1090,7 +1097,7 @@ def _reference_rows_for_fallback(
     targets: pd.DataFrame,
     current_matrix_name: str,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[int, int]]:
-
+    """Helper for _reference_rows_for_fallback."""
     out_h: list[np.ndarray] = []
     out_g: list[np.ndarray] = []
     out_t: list[np.ndarray] = []
@@ -1187,6 +1194,8 @@ def iter_effective_travel_batches(
     grid_ids: np.ndarray,
     hospitals: pd.DataFrame,
 ):
+    """Helper for iter_effective_travel_batches."""
+
 
     plan = _build_osm_topology_fallback_plan(profile, hospitals)
     targets = (
@@ -1257,6 +1266,8 @@ def _annotate_fallback_on_hospital_R(out: pd.DataFrame, profile: str) -> pd.Data
 
 
 def build_hospital_anomaly_qc(out: pd.DataFrame, profile: str) -> pd.DataFrame:
+    """Helper for build_hospital_anomaly_qc."""
+
 
     out_dir = OUTPUT_ROOT / profile
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1463,6 +1474,7 @@ def calculate_s1(
     beds_dense: np.ndarray,
     n_hospital_dense: int,
 ) -> pd.DataFrame:
+    """Helper for calculate_s1."""
 
 
     if R_GT100_POLICY not in {"keep", "exclude_legacy"}:
@@ -1717,7 +1729,7 @@ def weighted_percentile(
     weights: np.ndarray,
     q: float,
 ) -> float:
-
+    """Helper for weighted_percentile."""
     data = np.asarray(data, dtype=np.float64)
     weights = np.asarray(weights, dtype=np.float64)
     valid = (
@@ -1748,7 +1760,7 @@ def weighted_std(
     data: np.ndarray,
     weights: np.ndarray,
 ) -> float:
-
+    """Helper for weighted_std."""
     data = np.asarray(data, dtype=np.float64)
     weights = np.asarray(weights, dtype=np.float64)
     valid = (
@@ -2344,6 +2356,8 @@ def calculate_s2(
 def calculate_snap_qc(
     reference_provinces: pd.DataFrame,
 ) -> pd.DataFrame:
+    """Helper for calculate_snap_qc."""
+
 
     if not RUN_SNAP_QC:
         return pd.DataFrame()
@@ -2614,6 +2628,8 @@ def national_summary(
     province_summary: pd.DataFrame,
     hospital_R: pd.DataFrame,
 ) -> dict:
+    """Helper for national_summary."""
+
 
     p = province_summary[
         "population_sum"

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+"""Module utilities for 3 1 prepare ci data."""
 from __future__ import annotations
 from pathlib import Path
 import numpy as np
@@ -45,7 +45,7 @@ GDP_REQUIRED_COLS = {"年份", "省份", "城市", "城市代码", "人均地区
 
 
 def _resolve_gdp_sheet() -> str:
-
+    """Helper for _resolve_gdp_sheet."""
     return GDP_SHEET
 
 

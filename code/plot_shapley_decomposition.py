@@ -114,6 +114,8 @@ plt.rcParams["axes.unicode_minus"] = False
 
 
 def build_positions(df_sub):
+    """Helper for build_positions."""
+
 
     d = df_sub.set_index("factor").reindex(FACTOR_ORDER)
 

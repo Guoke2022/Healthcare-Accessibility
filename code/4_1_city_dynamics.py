@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """4_1 Prepare city socioeconomic controls and accessibility-change covariates.
 
-This is a deterministic data-preparation stage for the 5_x regression pipeline.
+This is a deterministic data-preparation stage for the SEE/CIE regression pipeline.
 Exploratory city clustering is intentionally excluded from the formal workflow.
 """
 from __future__ import annotations

@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from utils.InequalityIndex import weighted_gini, theil_index, atkinson_05
+from utils.inequality_metrics import weighted_gini, theil_index, atkinson_05
 from utils.multiscale import theil_city_decomposition
 
 

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Module utilities for 0 1 prepare base data."""
 
 
 from __future__ import annotations
@@ -109,7 +110,7 @@ def ensure_exists(path: Path, label: str) -> None:
 
 
 def safe_filename(name: str) -> str:
-
+    """Helper for safe_filename."""
     s = re.sub(r'[\\/:*?"<>|]+', "_", str(name))
     return s.strip().replace(" ", "_")
 
@@ -126,7 +127,7 @@ def file_sha256(path: Path, block_size: int = 16 * 1024 * 1024) -> str:
 
 
 def read_csv_robust(path: Path) -> pd.DataFrame:
-
+    """Helper for read_csv_robust."""
     last_error = None
     for enc in ("utf-8-sig", "utf-8", "gb18030", "gbk"):
         try:
@@ -409,6 +410,8 @@ def prepare_hospitals(provinces: gpd.GeoDataFrame) -> pd.DataFrame:
 # =============================================================================
 
 def prepare_population_raster(provinces_wgs84: gpd.GeoDataFrame) -> pd.DataFrame:
+    """Helper for prepare_population_raster."""
+
 
     parts_dir = OUTPUT_ROOT / str(YEAR) / "population_parts"
     summary_path = OUTPUT_ROOT / str(YEAR) / "qc" / "population_summary.csv"
@@ -791,6 +794,8 @@ def register_osm_metadata() -> dict:
 # =============================================================================
 
 def prepare_common_data() -> gpd.GeoDataFrame:
+    """Helper for prepare_common_data."""
+
 
     ensure_exists(PROVINCE_GEOJSON, "省级行政区 GeoJSON")
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)

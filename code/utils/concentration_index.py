@@ -1,3 +1,5 @@
+"""Module utilities for concentration index."""
+
 
 from __future__ import annotations
 
@@ -6,7 +8,7 @@ import pandas as pd
 
 
 def _aggregate_rank_ties(df: pd.DataFrame, rank_var: str, y_var: str, w_var: str) -> pd.DataFrame:
-
+    """Helper for _aggregate_rank_ties."""
     sub = df[[rank_var, y_var, w_var]].copy().replace([np.inf, -np.inf], np.nan)
     for c in [rank_var, y_var, w_var]:
         sub[c] = pd.to_numeric(sub[c], errors="coerce")
@@ -23,7 +25,7 @@ def _aggregate_rank_ties(df: pd.DataFrame, rank_var: str, y_var: str, w_var: str
 
 
 def concentration_index_weighted(df: pd.DataFrame, rank_var: str, y_var: str, w_var: str) -> float:
-
+    """Helper for concentration_index_weighted."""
     g = _aggregate_rank_ties(df, rank_var, y_var, w_var)
     if len(g) < 2:
         return np.nan
@@ -46,7 +48,7 @@ def concentration_index_weighted(df: pd.DataFrame, rank_var: str, y_var: str, w_
 
 
 def concentration_curve_weighted(df: pd.DataFrame, rank_var: str, y_var: str, w_var: str):
-
+    """Helper for concentration_curve_weighted."""
     g = _aggregate_rank_ties(df, rank_var, y_var, w_var)
     if len(g) < 2:
         return None

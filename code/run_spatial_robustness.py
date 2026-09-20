@@ -1,56 +1,5 @@
 # -*- coding: utf-8 -*-
-"""5_10 Spatial-error-model robustness for the fully adjusted Stage-3 SEE/CIE regressions.
-
-Purpose
--------
-5_8 is a diagnostic: it asks whether the HC1-OLS residuals retain global spatial
-autocorrelation.  This script is the corresponding *correction/robustness* analysis.
-It re-estimates the same seven fully adjusted Stage-3 mean specifications as 5_6
-under a spatial error model (SEM):
-
-    y = X beta + u
-    u = lambda W u + epsilon
-
-where W is the same row-standardized KNN4 city-weight matrix used in 5_8.
-The main 5_6 HC1-OLS models remain the primary, readily interpretable models;
-SEM is used to assess whether the substantive SEE/CIE conclusions persist after
-explicitly modelling residual spatial dependence.
-
-Estimator
----------
-A Gaussian maximum-likelihood SEM is estimated directly in this script.  For a
-candidate lambda, beta and sigma^2 are concentrated out analytically and lambda
-is optimized over (-0.99, 0.99).  Standard errors are obtained from the observed
-Hessian of the full Gaussian log-likelihood at the optimum, so uncertainty in
-lambda is propagated to beta.  This avoids introducing an additional ``spreg``
-dependency while retaining a standard SEM likelihood.
-
-Important interpretation
-------------------------
-- This is a robustness analysis for spatial dependence, not causal identification.
-- Coefficients remain adjusted associations.
-- The raw SEM residual u is expected to be spatially correlated when lambda != 0;
-  the relevant post-SEM diagnostic is the innovation epsilon=(I-lambda W)u.
-
-Outputs
--------
-result/5_10_spatial_error_robustness/
-  - sem_model_summary.csv
-  - sem_coefficients_long.csv
-  - sem_city_specific_effects_long.csv
-  - Table_OLS_HC1_vs_SEM_city_effects.csv
-  - Supplementary_Table_OLS_vs_SEM_city_effects.csv
-  - Supplementary_Table_OLS_vs_SEM_compact.docx
-  - sem_residual_moran_knn4.csv
-  - model_sample_and_geometry_match.csv
-  - unmatched_regression_cities.csv
-  - README.txt
-
-Dependencies
-------------
-Uses the same spatial stack as 5_8 plus scipy/patsy (already required elsewhere):
-    geopandas, libpysal, esda, scipy, patsy, statsmodels
-"""
+"""Spatial-error robustness for the fully adjusted SEE/CIE regressions."""
 from __future__ import annotations
 
 import warnings
@@ -63,11 +12,12 @@ from config import (
     BASE_YEAR,
     END_YEAR,
     SEE_CIE_REGRESSION_ROOT,
-    COUNTY_SHP,
+    CITY_SHP,
     RESULT_ROOT,
     CITY_ORDER_4,
 )
-from utils.extended_analysis import read_csv_robust, p_to_star
+from utils.extended_analysis import p_to_star
+from utils.regression import load_standardized_see_cie_panel
 
 # -----------------------------------------------------------------------------
 # Settings
@@ -78,7 +28,7 @@ RANDOM_SEED = 20260828
 LAMBDA_BOUND = 0.99
 HESSIAN_EPS = 1e-4
 
-OUT_ROOT = RESULT_ROOT / "5_10_spatial_error_robustness"
+OUT_ROOT = RESULT_ROOT / "spatial_robustness"
 
 ACC_BASE_COL = f"acc_{BASE_YEAR}"
 GINI_BASE_COL = f"gini_{BASE_YEAR}"
@@ -94,74 +44,44 @@ def _norm_text(s: pd.Series) -> pd.Series:
 
 
 def build_city_geometry():
-    """Dissolve county polygons to the city units used by the regression pipeline.
-
-    Mirrors the city-name logic in 5_8 / 4_1_city_dynamics.py.
-    """
+    """Load the fixed city boundary layer used for spatial robustness analyses."""
     try:
         import geopandas as gpd
-    except ImportError as e:
-        raise ImportError("Please install geopandas: pip install geopandas") from e
+    except ImportError as exc:
+        raise ImportError("geopandas is required for spatial robustness analyses") from exc
 
-    if not Path(COUNTY_SHP).exists():
-        raise FileNotFoundError(f"COUNTY_SHP not found: {COUNTY_SHP}")
-
-    gdf = gpd.read_file(COUNTY_SHP)
-    required = {"地级", "省级", "县级", "geometry"}
+    if not Path(CITY_SHP).exists():
+        raise FileNotFoundError(f"CITY_SHP not found: {CITY_SHP}")
+    gdf = gpd.read_file(CITY_SHP)
+    required = {"地名", "地级", "geometry"}
     missing = required - set(gdf.columns)
     if missing:
-        raise ValueError(f"COUNTY_SHP is missing required columns: {sorted(missing)}")
+        raise ValueError(f"CITY_SHP is missing required columns: {sorted(missing)}")
 
-    gdf = gdf[["地级", "省级", "县级", "geometry"]].copy()
+    gdf = gdf[["地名", "地级", "geometry"]].copy()
     gdf["city_name"] = _norm_text(gdf["地级"])
-    gdf["province_name"] = _norm_text(gdf["省级"])
-    gdf["county_name"] = _norm_text(gdf["县级"])
-
-    use_province = gdf["city_name"].eq("不统计") | gdf["city_name"].isna()
-    gdf.loc[use_province, "city_name"] = gdf.loc[use_province, "province_name"]
-
-    direct_admin = gdf["city_name"].isin(["海南省", "湖北省"])
-    gdf.loc[direct_admin, "city_name"] = gdf.loc[direct_admin, "county_name"]
+    fallback = gdf["city_name"].eq("不统计") | gdf["city_name"].isna()
+    gdf.loc[fallback, "city_name"] = _norm_text(gdf.loc[fallback, "地名"])
 
     bad = ~gdf.geometry.is_valid
     if bad.any():
-        warnings.warn(f"Repairing {int(bad.sum())} invalid county geometries with buffer(0).")
+        warnings.warn(f"Repairing {int(bad.sum())} invalid city geometries with buffer(0).")
         gdf.loc[bad, "geometry"] = gdf.loc[bad, "geometry"].buffer(0)
-
-    city_geo = gdf[["city_name", "geometry"]].dissolve(by="city_name", as_index=False)
-    city_geo = city_geo[~city_geo.geometry.is_empty & city_geo.geometry.notna()].copy()
-    return city_geo
+    return gdf[["city_name", "geometry"]].drop_duplicates("city_name")
 
 
 def prepare_regression_data() -> pd.DataFrame:
-    """Load the exact standardized dataset written by fiscal-adjusted 5_6."""
-    path = SEE_CIE_REGRESSION_ROOT / "regression_standardized_data.csv"
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Regression input not found: {path}\n"
-            "Please rerun 5_5_build_see_cie_regression_panel.py and "
-            "5_6_see_cie_regression.py first."
-        )
-
-    df = read_csv_robust(path)
+    """Load the standardized city panel shared with the main regressions."""
+    df = load_standardized_see_cie_panel()
     needed = {"地级", "city_level", FISCAL_BASE_COL}
     missing = needed - set(df.columns)
     if missing:
-        raise ValueError(
-            f"Regression dataset missing columns: {sorted(missing)}. "
-            "The formal main model must include baseline fiscal capacity."
-        )
-
-    df = df[df["city_level"].isin(CITY_ORDER_4)].copy()
+        raise ValueError(f"Regression dataset missing columns: {sorted(missing)}")
     df["地级"] = _norm_text(df["地级"])
-    df["city_level_4"] = pd.Categorical(
-        df["city_level"], categories=CITY_ORDER_4, ordered=True
-    )
     return df
 
-
 def stage3_specs():
-    """Return the seven fiscal-adjusted Stage-3 formulas used in 5_6."""
+    """Return the seven fiscal-adjusted Stage-3 formulas used in main regression."""
     city_fe = 'C(city_level_4, Treatment(reference="Medium/Small City"))'
     controls = (
         f"pop_density_mean + {GDP_BASE_COL} + GDP_growth_pct + {RESPOP_BASE_COL} "
@@ -231,7 +151,7 @@ def stage3_specs():
 
 
 def build_knn_weights(city_geo, city_order, k=4):
-    """Build the same row-standardized KNN weights used in 5_8."""
+    """Build the same row-standardized KNN weights used in spatial diagnostics."""
     try:
         from libpysal.weights import KNN
     except ImportError as e:
@@ -239,7 +159,7 @@ def build_knn_weights(city_geo, city_order, k=4):
 
     q = city_geo.set_index("city_name").loc[list(city_order)].copy()
     if q.crs is None:
-        raise ValueError("COUNTY_SHP has no CRS; cannot construct defensible KNN distances.")
+        raise ValueError("CITY_SHP has no CRS; cannot construct defensible KNN distances.")
 
     china_aea = (
         "+proj=aea +lat_1=25 +lat_2=47 +lat_0=0 +lon_0=105 "
@@ -305,7 +225,7 @@ def fit_sem_ml(y, X, W, coef_names):
         from scipy.stats import norm
         from statsmodels.tools.numdiff import approx_hess
     except ImportError as e:
-        raise ImportError("5_9 requires scipy and statsmodels.") from e
+        raise ImportError("scipy and statsmodels are required for spatial robustness") from e
 
     y = np.asarray(y, dtype=float).reshape(-1)
     X = np.asarray(X, dtype=float)
@@ -791,7 +711,7 @@ def main():
         import statsmodels.formula.api as smf
         from scipy.stats import chi2
     except ImportError as e:
-        raise ImportError("5_9 requires patsy, statsmodels and scipy.") from e
+        raise ImportError("patsy, statsmodels and scipy are required for spatial robustness") from e
 
     OUT_ROOT.mkdir(parents=True, exist_ok=True)
 
@@ -836,7 +756,7 @@ def main():
             )
 
         # Build the exact patsy design for the Stage-3 formula.  This also gives us
-        # coefficient names identical to statsmodels 5_6.
+        # coefficient names identical to statsmodels main regression.
         y_df, X_df = patsy.dmatrices(spec["formula"], data=d, return_type="dataframe")
         used_idx = y_df.index
         d_used = d.loc[used_idx].copy()
@@ -1046,11 +966,11 @@ def main():
         effects, OUT_ROOT / "Supplementary_Table_OLS_vs_SEM_compact.docx"
     )
 
-    readme = f"""Spatial-error robustness for fiscal-adjusted Stage-3 models\n\nPrimary OLS:\n  5_6 HC1 models with baseline fiscal capacity {FISCAL_BASE_COL}.\n\nSpatial robustness:\n  Gaussian ML spatial error model, W = row-standardized KNN{K_NEIGHBORS}.\n  Same city samples and same mean specification as each Stage-3 OLS model.\n\nInterpretation:\n  The SEM evaluates whether SEE/CIE associations persist after explicitly modelling\n  residual spatial dependence. It does not solve non-spatial endogeneity and does not\n  establish causal effects.\n\nPost-SEM Moran diagnostic:\n  Use SEM_innovation_epsilon, not SEM_raw_residual_u. Under the SEM, the raw residual\n  u may be spatially correlated by construction; epsilon=(I-lambda W)u should not retain\n  substantial spatial autocorrelation if the error process is adequately captured.\n\nKey files:\n  sem_model_summary.csv\n  sem_city_specific_effects_long.csv\n  Table_OLS_HC1_vs_SEM_city_effects.csv\n    Internal/QC comparison with stars, sign-flip and magnitude-change diagnostics.\n  Supplementary_Table_OLS_vs_SEM_city_effects.csv\n    SI-ready table with separate beta, SE and exact P columns for OLS and SEM.\n  sem_residual_moran_knn4.csv\n"""
+    readme = f"""Spatial-error robustness for fiscal-adjusted Stage-3 models\n\nPrimary OLS:\n  main regression HC1 models with baseline fiscal capacity {FISCAL_BASE_COL}.\n\nSpatial robustness:\n  Gaussian ML spatial error model, W = row-standardized KNN{K_NEIGHBORS}.\n  Same city samples and same mean specification as each Stage-3 OLS model.\n\nInterpretation:\n  The SEM evaluates whether SEE/CIE associations persist after explicitly modelling\n  residual spatial dependence. It does not solve non-spatial endogeneity and does not\n  establish causal effects.\n\nPost-SEM Moran diagnostic:\n  Use SEM_innovation_epsilon, not SEM_raw_residual_u. Under the SEM, the raw residual\n  u may be spatially correlated by construction; epsilon=(I-lambda W)u should not retain\n  substantial spatial autocorrelation if the error process is adequately captured.\n\nKey files:\n  sem_model_summary.csv\n  sem_city_specific_effects_long.csv\n  Table_OLS_HC1_vs_SEM_city_effects.csv\n    Internal/QC comparison with stars, sign-flip and magnitude-change diagnostics.\n  Supplementary_Table_OLS_vs_SEM_city_effects.csv\n    SI-ready table with separate beta, SE and exact P columns for OLS and SEM.\n  sem_residual_moran_knn4.csv\n"""
     (OUT_ROOT / "README.txt").write_text(readme, encoding="utf-8")
 
     print("=" * 96)
-    print("5_9 spatial-error robustness complete")
+    print("Spatial-error robustness complete")
     print(f"Output: {OUT_ROOT}")
     if not summary.empty:
         print(summary[[

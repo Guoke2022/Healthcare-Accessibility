@@ -1,35 +1,13 @@
 # -*- coding: utf-8 -*-
-"""5_9 Province fixed-effects robustness for SEE/CIE regressions.
-
-Purpose
--------
-The formal 5_6 model already includes baseline fiscal capacity
-ln(FiscalRevenue_pc_2014) as a control.  This script asks a separate robustness
-question: do the *overall* pathway associations persist after absorbing common
-province-level institutional/policy environments?
-
-Accordingly, this script deliberately does NOT re-estimate SEE/CIE x city-size
-interactions with province fixed effects.  Four of the seven mega cities are
-province-level municipalities and provide no within-province city variation,
-which makes mega-city interactions weakly identified under province FE.
-
-Specifications (same complete-case sample within each outcome/model family):
-  Main_HC1:
-      baseline outcome + controls + city-size FE + expansion variable(s)
-  ProvinceFE_HC1:
-      Main_HC1 + province FE
-  ProvinceFE_cluster:
-      ProvinceFE model with province-clustered standard errors
-
-Coefficients remain adjusted associations, not causal effects.
-"""
+"""Province fixed-effects robustness for the adjusted SEE/CIE regressions."""
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
-from config import BASE_YEAR, END_YEAR, SEE_CIE_REGRESSION_ROOT, CITY_ORDER_4
-from utils.extended_analysis import read_csv_robust, p_to_star
+from config import BASE_YEAR, SEE_CIE_REGRESSION_ROOT, CITY_ORDER_4
+from utils.extended_analysis import p_to_star
+from utils.regression import load_standardized_see_cie_panel
 
 ACC_BASE_COL = f"acc_{BASE_YEAR}"
 GINI_BASE_COL = f"gini_{BASE_YEAR}"
@@ -110,14 +88,10 @@ def main():
     try:
         import statsmodels.formula.api as smf
     except ImportError as e:
-        raise ImportError("5_6_3 requires statsmodels") from e
+        raise ImportError("statsmodels is required for province fixed-effects robustness") from e
 
     OUT_ROOT.mkdir(parents=True, exist_ok=True)
-    path = SEE_CIE_REGRESSION_ROOT / "regression_standardized_data.csv"
-    if not path.exists():
-        raise FileNotFoundError(f"Run 5_6_see_cie_regression.py first: {path}")
-
-    df = read_csv_robust(path)
+    df = load_standardized_see_cie_panel()
     required = {"省级", "city_level", FISCAL_BASE_COL, "city_SEE", "city_CIE", "city_TotalExpansion"}
     missing = required - set(df.columns)
     if missing:
@@ -127,9 +101,7 @@ def main():
     df["city_level_4"] = pd.Categorical(df["city_level"], categories=CITY_ORDER_4, ordered=True)
     df["province_fe"] = df["省级"].astype("string").str.strip().astype("category")
 
-    # These variables have already been standardized separately in 5_6.
-    # In particular, city_TotalExpansion is z(raw SEE + raw CIE),
-    # so it must NOT be reconstructed here as z(SEE) + z(CIE).
+    
     df["city_SEE"] = pd.to_numeric(df["city_SEE"], errors="coerce")
     df["city_CIE"] = pd.to_numeric(df["city_CIE"], errors="coerce")
     df["city_TotalExpansion"] = pd.to_numeric(
@@ -268,7 +240,7 @@ def main():
     (OUT_ROOT / "README.txt").write_text(readme, encoding="utf-8")
 
     print("=" * 88)
-    print("5_6_3 Province FE overall robustness complete")
+    print("Province fixed-effects robustness complete")
     print(f"Output: {OUT_ROOT}")
     print(table.to_string(index=False))
     print("=" * 88)

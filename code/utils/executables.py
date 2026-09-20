@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Module utilities for executables."""
+
 
 from __future__ import annotations
 
@@ -43,7 +45,7 @@ def _prefix_bin_candidates(prefix: Path, filenames: list[str]) -> list[Path]:
 
 
 def _infer_conda_prefixes(search_all_envs: bool = True) -> list[Path]:
-
+    """Helper for _infer_conda_prefixes."""
     prefixes: list[Path] = [Path(sys.prefix)]
 
     for key, value in os.environ.items():
@@ -100,6 +102,8 @@ def resolve_executable(
     search_all_conda_envs: bool = True,
     install_hint: str | None = None,
 ) -> str:
+    """Helper for resolve_executable."""
+
 
     attempted: list[str] = []
     filenames = _candidate_filenames(name)
@@ -148,7 +152,7 @@ def resolve_executable(
             if hit:
                 return hit
 
-
+    # 4. PATH。
     for cmd in filenames:
         found = shutil.which(cmd)
         attempted.append(f"PATH:{cmd}")
@@ -216,7 +220,7 @@ def resolve_cargo(project_root: Path) -> str:
 
 
 def executable_version(exe: str) -> str:
-
+    """Helper for executable_version."""
     p = subprocess.run(
         [exe, "--version"],
         text=True,

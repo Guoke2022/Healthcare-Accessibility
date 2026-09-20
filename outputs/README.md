@@ -1,11 +1,10 @@
 # Generated outputs
 
-`python reproduce.py` writes the public reproduction results here.
+This directory is populated by `python reproduce.py`.
 
-The generated files are ignored by Git. They can be deleted at any time with:
+- `figures/` contains manuscript figure outputs.
+- `regression/` contains the main SEE/CIE model tables and machine-readable estimates.
+- `map_layers/` contains GIS layers exported by map-generating scripts.
+- `generated_files.txt` lists every generated file from the most recent run.
 
-```bash
-python reproduce.py --clean-only
-```
-
-After a successful run, `generated_files.txt` lists every generated file. Temporary staging and intermediate files are kept outside this directory and are removed automatically unless `--keep-work` is used.
+Generated files are ignored by Git. Run `python reproduce.py --clean-only` to remove them.

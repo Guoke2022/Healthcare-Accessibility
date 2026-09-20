@@ -1,83 +1,95 @@
-# -*- coding: utf-8 -*-
-"""Figure 5.2 accessibility scale-reversal boxplot.
-
-Separated from 5_4_see_cie_descriptives.py so the descriptive analysis script
-writes tabular outputs, while this script renders the manuscript figure from the
-released/derived summary table.
-"""
+"""Figure 5b: absolute and relative city-level accessibility gains by city size."""
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 
-from config import FIGURE5_ROOT, PLOT_DPI, SEE_CIE_DESCRIPTIVE_ROOT, CITY_ORDER_4
-from utils.extended_analysis import set_nature_style
+from config import BASE_YEAR, END_YEAR, SEE_CIE_PANEL_ROOT, FIGURE5_ROOT, PLOT_DPI, CITY_ORDER_4
+from utils.extended_analysis import read_csv_robust, set_nature_style
 
 LEVEL_LABELS = ["Small & Medium\nCities", "Large Cities", "Super Cities", "Mega Cities"]
 
 
-def _boxplot_colored(ax, data, positions, color, *, vert=True, width=.28):
+def _boxplot_colored(ax, data, positions, color, *, width=0.28):
     return ax.boxplot(
-        data, positions=positions, widths=width, vert=vert,
-        showfliers=False, patch_artist=True, whis=1.5,
-        boxprops=dict(facecolor=color, edgecolor="black", linewidth=.9, alpha=.85),
+        data,
+        positions=positions,
+        widths=width,
+        vert=False,
+        showfliers=False,
+        patch_artist=True,
+        whis=1.5,
+        boxprops=dict(facecolor=color, edgecolor="black", linewidth=0.9, alpha=0.85),
         medianprops=dict(color="black", linewidth=1.2),
-        whiskerprops=dict(color="black", linewidth=.9),
-        capprops=dict(color="black", linewidth=.9),
+        whiskerprops=dict(color="black", linewidth=0.9),
+        capprops=dict(color="black", linewidth=0.9),
     )
 
 
-def main() -> None:
-    path = SEE_CIE_DESCRIPTIVE_ROOT / "city_accessibility_absolute_relative_change.csv"
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Missing prerequisite table: {path}. Run 5_4_see_cie_descriptives.py first."
-        )
+def load_accessibility_changes() -> pd.DataFrame:
+    path = SEE_CIE_PANEL_ROOT / f"city_{BASE_YEAR}_{END_YEAR}_index.csv"
+    df = read_csv_robust(path)
+    df = df[df["city_level"].isin(CITY_ORDER_4)].copy()
+    df["abs_gain"] = pd.to_numeric(df["acc_delta"], errors="coerce")
+    baseline = pd.to_numeric(df[f"acc_{BASE_YEAR}"], errors="coerce")
+    df["rel_gain_pct"] = np.where(baseline.notna() & (baseline != 0), df["abs_gain"] / baseline * 100.0, np.nan)
 
-    acc_city = pd.read_csv(path, encoding="utf-8-sig")
+    valid = df["rel_gain_pct"].dropna().to_numpy()
+    if len(valid):
+        lo = float(np.quantile(valid, 0.01))
+        hi = float(np.quantile(valid, 0.95))
+        df["rel_plot"] = df["rel_gain_pct"].clip(lower=lo, upper=hi)
+    else:
+        df["rel_plot"] = np.nan
+    return df
+
+
+def main() -> None:
+    data = load_accessibility_changes()
     plt = set_nature_style()
 
     fig = plt.figure(figsize=(6, 4))
-    gs = fig.add_gridspec(1, 2, width_ratios=[1.22, 1.22], wspace=.05)
-    axL = fig.add_subplot(gs[0, 0])
-    axR = fig.add_subplot(gs[0, 1], sharey=axL)
-    pos_h = np.arange(len(CITY_ORDER_4)) + 1
+    grid = fig.add_gridspec(1, 2, width_ratios=[1.22, 1.22], wspace=0.05)
+    ax_left = fig.add_subplot(grid[0, 0])
+    ax_right = fig.add_subplot(grid[0, 1], sharey=ax_left)
+    positions = np.arange(len(CITY_ORDER_4)) + 1
 
-    data_abs = [
-        pd.to_numeric(acc_city.loc[acc_city["city_level"] == level, "abs_gain"], errors="coerce").dropna().values
+    absolute = [
+        pd.to_numeric(data.loc[data["city_level"] == level, "abs_gain"], errors="coerce").dropna().values
         for level in CITY_ORDER_4
     ]
-    data_rel = [
-        pd.to_numeric(acc_city.loc[acc_city["city_level"] == level, "rel_plot"], errors="coerce").dropna().values
+    relative = [
+        pd.to_numeric(data.loc[data["city_level"] == level, "rel_plot"], errors="coerce").dropna().values
         for level in CITY_ORDER_4
     ]
 
-    _boxplot_colored(axL, data_abs, pos_h, "#83aaaf", vert=False, width=.30)
-    bpR = _boxplot_colored(axR, data_rel, pos_h, "#cfa0a2", vert=False, width=.30)
+    _boxplot_colored(ax_left, absolute, positions, "#83aaaf", width=0.30)
+    right_box = _boxplot_colored(ax_right, relative, positions, "#cfa0a2", width=0.30)
 
-    axL.set_xlabel("Absolute change in accessibility")
-    axR.set_xlabel("Relative change in accessibility (%)")
-    axL.set_yticks(pos_h)
-    axL.set_yticklabels(LEVEL_LABELS)
-    axR.tick_params(axis="y", left=False, right=False, labelleft=False, labelright=False, length=0)
-    axR.spines["left"].set_visible(False)
-    axL.set_ylim(.4, len(CITY_ORDER_4) + .6)
+    ax_left.set_xlabel("Absolute change in accessibility")
+    ax_right.set_xlabel("Relative change in accessibility (%)")
+    ax_left.set_yticks(positions)
+    ax_left.set_yticklabels(LEVEL_LABELS)
+    ax_right.tick_params(axis="y", left=False, right=False, labelleft=False, labelright=False, length=0)
+    ax_right.spines["left"].set_visible(False)
+    ax_left.set_ylim(0.4, len(CITY_ORDER_4) + 0.6)
 
-    whisk_x = []
-    for w in bpR["whiskers"]:
-        whisk_x.extend(w.get_xdata())
-    whisk_x = np.asarray(whisk_x, dtype=float)
-    whisk_x = whisk_x[np.isfinite(whisk_x)]
-    if len(whisk_x):
-        xmin, xmax = float(whisk_x.min()), float(whisk_x.max())
-        pad = .06 * (xmax - xmin) if xmax > xmin else 1.0
-        axR.set_xlim(xmin - pad, xmax + pad)
+    whiskers = []
+    for artist in right_box["whiskers"]:
+        whiskers.extend(artist.get_xdata())
+    whiskers = np.asarray(whiskers, dtype=float)
+    whiskers = whiskers[np.isfinite(whiskers)]
+    if len(whiskers):
+        xmin, xmax = float(whiskers.min()), float(whiskers.max())
+        pad = 0.06 * (xmax - xmin) if xmax > xmin else 1.0
+        ax_right.set_xlim(xmin - pad, xmax + pad)
 
-    fig.subplots_adjust(left=.22, right=.98, bottom=.25, top=.95)
+    fig.subplots_adjust(left=0.22, right=0.98, bottom=0.25, top=0.95)
     FIGURE5_ROOT.mkdir(parents=True, exist_ok=True)
-    fig.savefig(FIGURE5_ROOT / "Fig_acc_scale_reversal_mirrored_BOX.png", dpi=PLOT_DPI, bbox_inches="tight")
+    out = FIGURE5_ROOT / "Fig_acc_scale_reversal_mirrored_BOX.png"
+    fig.savefig(out, dpi=PLOT_DPI, bbox_inches="tight")
     plt.close(fig)
-    print(f"fig5_2 done -> {FIGURE5_ROOT / 'Fig_acc_scale_reversal_mirrored_BOX.png'}")
+    print(f"Figure 5b -> {out}")
 
 
 if __name__ == "__main__":

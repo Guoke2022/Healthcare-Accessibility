@@ -1,5 +1,8 @@
 # -*- coding = utf-8 -*-
+# @Author ：YEPEI
+# @Time : 2025/6/2 17:18
 
+# @Software : PyCharm
 
 import os
 import warnings
@@ -126,6 +129,8 @@ def plot_pie(df: pd.DataFrame, output_path: str, scale_name: str) -> None:
 
 
 def load_fig1_admin_level(admin_level: str):
+    """Helper for load_fig1_admin_level."""
+
 
     if admin_level != 'city':
         return load_admin_level(admin_level)
@@ -292,7 +297,7 @@ def export_arcgis_layer(
 
 def main() -> None:
     fig1_dir = figure_dir('Figure 1')
-    arcgis_dir = figure_dir('Map_layers', 'figure1_travel_time_60min')
+    arcgis_dir = figure_dir('Map_layers', 'Fig1_travel_time_60min')
     os.makedirs(arcgis_dir, exist_ok=True)
 
     jobs = [

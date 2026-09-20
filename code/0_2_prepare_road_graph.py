@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Module utilities for 0 2 prepare road graph."""
+
 
 from __future__ import annotations
 
@@ -76,6 +78,8 @@ def json_dump(obj: dict, path: Path) -> None:
 
 
 def run_command(cmd: list[str], cwd: Path | None = None) -> None:
+    """Helper for run_command."""
+
 
     log("执行：" + " ".join(f'"{x}"' if " " in str(x) else str(x) for x in cmd))
 
@@ -103,6 +107,7 @@ def expand_bbox_conservatively(
     max_lat: float,
     buffer_km: float,
 ):
+    """Helper for expand_bbox_conservatively."""
 
 
     lat_pad = buffer_km / KM_PER_DEG_LAT_CONSERVATIVE
@@ -155,6 +160,8 @@ def bbox_to_osmium_string(bbox) -> str:
 # =============================================================================
 
 def prepare_roads_only_pbf(osmium_exe: str) -> Path:
+    """Helper for prepare_roads_only_pbf."""
+
 
     ROADS_ONLY_DIR.mkdir(parents=True, exist_ok=True)
 

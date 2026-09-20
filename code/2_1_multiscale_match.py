@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Module utilities for 2 1 multiscale match."""
+
 
 from __future__ import annotations
 
@@ -63,7 +65,7 @@ LOOKUP_READY_ENV = "NC_2_1_GRID_ADMIN_LOOKUP_READY"
 
 
 def _landscan_signature(year: int) -> tuple[str, Path, dict]:
-
+    """Helper for _landscan_signature."""
     meta_path = PREPARED_ROOT / str(year) / "metadata" / "landscan_metadata.json"
     if not meta_path.exists():
         raise FileNotFoundError(f"缺少 LandScan metadata：{meta_path}")
@@ -119,6 +121,8 @@ def _apply_static_admin_labels(joined: pd.DataFrame, poor_counties: set[str]) ->
 
 
 def build_grid_admin_lookups(admin_all: gpd.GeoDataFrame, poor_counties: set[str]) -> dict[int, Path]:
+    """Helper for build_grid_admin_lookups."""
+
 
     groups: dict[str, list[int]] = {}
     meta_paths: dict[str, list[Path]] = {}
@@ -207,7 +211,7 @@ def build_grid_admin_lookups(admin_all: gpd.GeoDataFrame, poor_counties: set[str
 
 
 def validate_accessibility_outputs() -> None:
-
+    """Helper for validate_accessibility_outputs."""
     problems = []
 
     print("\n[2_1-1] 检查 1_2 输出完整性")
@@ -256,7 +260,7 @@ def validate_accessibility_outputs() -> None:
 
 
 def add_urban_rural(df: pd.DataFrame, raster) -> pd.DataFrame:
-
+    """Helper for add_urban_rural."""
     if raster is None:
         return df
 
@@ -309,6 +313,8 @@ def load_admin() -> gpd.GeoDataFrame:
 
 
 def legacy_postprocess(df: pd.DataFrame) -> pd.DataFrame:
+    """Helper for legacy_postprocess."""
+
 
     if not APPLY_LEGACY_POSTPROCESS or len(df) == 0:
         return df
@@ -440,7 +446,7 @@ def match_one_part(
     src_path: Path,
     lookup_path: Path,
 ) -> pd.DataFrame:
-
+    """Helper for match_one_part."""
     df = read_new_grid_part(src_path)
     df = legacy_postprocess(df)
     if not lookup_path.exists():

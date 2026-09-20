@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+"""Module utilities for extended analysis."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -222,7 +222,7 @@ def _existing_shapefile_sidecars(path: Path) -> list[Path]:
 
 
 def extended_lineage_source_files() -> list[Path]:
-    """Files whose current content defines whether 4_x/5_x outputs are reusable.
+    """Files whose current content defines whether downstream outputs are reusable.
 
     This is intentionally broad.  Extended analyses are much cheaper than 1_1,
     so conservative invalidation is preferred over silently combining a new core
@@ -247,7 +247,7 @@ def extended_lineage_source_files() -> list[Path]:
 
     files.extend(_existing_shapefile_sidecars(Path(COUNTY_SHP)))
 
-    # 4_x/5_x read the 2_2 statistics through read_stats(). Include all current
+    # Downstream analyses read the 2_2 statistics through read_stats(). Include all current
     # CSVs in this scope/profile so any core-result change invalidates the marker.
     stats_root = Path(ANALYSIS_ROOT) / SERVICE_SCOPE / PROFILE
     if stats_root.exists():
@@ -256,10 +256,9 @@ def extended_lineage_source_files() -> list[Path]:
     # Code/config changes that affect extended-analysis semantics also invalidate.
     code_root = Path(CODE_ROOT)
     for name in [
-        "config.py", "4_1_city_dynamics.py", "5_1_hospital_changes.py",
-        "5_2_hospital_descriptives.py", "5_3_build_annual_see_cie.py",
-        "5_4_see_cie_descriptives.py", "5_5_build_see_cie_regression_panel.py",
-        "5_6_see_cie_regression.py",
+        "config.py", "4_1_city_dynamics.py", "prepare_hospital_expansion.py",
+        "build_see_cie_regression_panel.py", "run_see_cie_regressions.py",
+        "run_province_fe_robustness.py", "run_spatial_robustness.py",
     ]:
         p = code_root / name
         if p.exists():

@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Render Figure 5.3 from the compact city-size effect table produced by stage 5_6."""
-# ============================================================
+"""Module utilities for fig5 3 see cie effect plots."""
 
+
+# ============================================================
+# Figure 5.3 SEE/CIE effect plots (4 city-size groups; 3 rows × 4 cols)
 #   Output: Figure/Figure 5/Fig_SEE_CIE_Total_citysize.png
 # ============================================================
 
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -74,6 +77,11 @@ METRIC_COLORS = {
 CITY_ORDER  = ["Medium/Small City", "Large City", "Super City", "Mega City"]
 CITY_LABELS = ["Medium & Small Cities", "Large Cities", "Super Cities", "Mega Cities"]
 
+def split_coef_star(df):
+    num = df.replace(r"[^0-9\.\-]", "", regex=True).replace("", np.nan).astype(float)
+    star = df.replace(r"[0-9\.\-]", "", regex=True)
+    return num, star
+
 def get_ylim(mat):
     vals = mat.values.flatten()
     vals = vals[~np.isnan(vals)]
@@ -104,13 +112,16 @@ def main():
 
     effects = pd.read_csv(OUTPUT_PATH3 / "city_size_effects.csv")
 
-    me = effects[
+    acc = effects[
         effects["outcome"].eq("accessibility")
         & effects["expansion"].isin(["SEE", "CIE"])
         & effects["city_level"].isin(CITY_ORDER)
     ].copy()
-    me = me.rename(columns={"expansion": "path"})
-    me["star"] = me["p"].apply(p_to_star)
+    if acc.empty:
+        raise ValueError("No accessibility city-size effects found in city_size_effects.csv")
+    me = acc.rename(columns={"expansion": "path", "significance": "star"})[
+        ["city_level", "path", "effect", "se", "ci_low", "ci_high", "p", "star"]
+    ].copy()
 
     fair = effects[
         effects["outcome"].isin(METRIC_ORDER)
@@ -138,7 +149,7 @@ def main():
     TOT_YLIM = get_ylim(tot_num)
 
     # ------------------------------------------------------------
-
+    # 3) Plot layout: NOW 3 rows × 4 cols
     # ------------------------------------------------------------
     fig = plt.figure(figsize=(9.6, 12))
 

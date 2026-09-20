@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Optional high-performance workflow for reconstructing the analysis from raw geospatial inputs."""
+
 
 from __future__ import annotations
 
@@ -82,19 +84,15 @@ POST_STAGES = [
 SHAPLEY_STAGE = "4_2_shapley_decomposition.py"
 CORE_ANALYSIS_STAGES = [
     "4_1_city_dynamics.py",
-    "5_1_hospital_changes.py",
-    "5_2_hospital_descriptives.py",
-    "5_3_build_annual_see_cie.py",
-    "5_4_see_cie_descriptives.py",
-    "5_5_build_see_cie_regression_panel.py",
-    "5_6_see_cie_regression.py",
+    "prepare_hospital_expansion.py",
+    "build_see_cie_regression_panel.py",
+    "run_see_cie_regressions.py",
 ]
 
 
 MAIN_ADDITIONAL_EXPERIMENT_STAGES = [
-    "5_9_province_fe_robustness.py",
-    "5_8_moran_stage3_residuals.py",
-    "5_10_spatial_error_robustness.py",
+    "run_province_fe_robustness.py",
+    "run_spatial_robustness.py",
 ]
 
 
@@ -158,7 +156,7 @@ def _init_logs() -> None:
 
 
 def write_run_context() -> None:
-
+    """Helper for write_run_context."""
     RESULT_ROOT.mkdir(parents=True, exist_ok=True)
     payload = {
         "analysis_mode": ANALYSIS_MODE,
@@ -293,7 +291,7 @@ def run_stage(name: str, *, year: int | None = None) -> None:
 
 
 def _rust_router_paths() -> tuple[Path, Path, list[Path]]:
-
+    """Helper for _rust_router_paths."""
     rust_dir = Path(
         os.environ.get("NC_RUST_ROUTER_DIR", PROJECT_ROOT / "osm_batch_router_v2")
     ).expanduser().resolve()
@@ -312,6 +310,8 @@ def _rust_router_paths() -> tuple[Path, Path, list[Path]]:
 
 
 def preflight_external_dependencies() -> None:
+    """Helper for preflight_external_dependencies."""
+
 
     global RESOLVED_TOOL_ENV
 
@@ -340,7 +340,7 @@ def preflight_external_dependencies() -> None:
 
 
 def prebuild_rust_router_once() -> None:
-
+    """Helper for prebuild_rust_router_once."""
     rust_dir, router_exe, sources = _rust_router_paths()
     digest = _router_source_digest(sources)
     stamp = _router_build_stamp(rust_dir)
@@ -380,7 +380,7 @@ def prebuild_rust_router_once() -> None:
 
 
 def prepare_common_inputs_once() -> None:
-
+    """Helper for prepare_common_inputs_once."""
     env = os.environ.copy()
     env.update(RESOLVED_TOOL_ENV)
     env.pop(YEAR_ENV_VAR, None)

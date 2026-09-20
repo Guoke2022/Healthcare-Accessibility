@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
+"""Population-weighted inequality statistics for accessibility.
 
+Formal outcomes are Gini, Theil T and Atkinson (ε=0.5). All three retain
+zero-accessibility observations and therefore use the same population universe:
+finite accessibility >= 0 and finite population weight > 0.
+"""
 from __future__ import annotations
 
 import numpy as np
@@ -57,7 +62,12 @@ def theil_index(x, w):
 
 
 def atkinson_index(x, w, epsilon: float = ATKINSON_EPSILON):
+    """Population-weighted Atkinson index, retaining accessibility=0 values.
 
+    The formal project setting is ε=0.5. The implementation supports 0<=ε<1;
+    ε>=1 is intentionally rejected because zero values would require a separate
+    limiting convention.
+    """
     x, w = _valid_nonnegative(x, w)
     if x.size == 0 or w.sum() <= 0:
         return np.nan
@@ -77,7 +87,7 @@ def atkinson_index(x, w, epsilon: float = ATKINSON_EPSILON):
 
 
 def atkinson_05(x, w):
-
+    """Formal Atkinson outcome with ε=0.5."""
     return atkinson_index(x, w, epsilon=ATKINSON_EPSILON)
 
 

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Module utilities for cache."""
+
 
 from __future__ import annotations
 
@@ -202,6 +204,8 @@ def prepare_stage_directory(
     run_policy: str = "auto_clean",
     payload: dict | None = None,
 ) -> str:
+    """Helper for prepare_stage_directory."""
+
 
     stage_dir = Path(stage_dir)
     manifest = stage_manifest_path(stage_dir)
@@ -256,7 +260,7 @@ def prepare_stage_directory(
 
 
 def clean_directory(path: Path) -> None:
-
+    """Helper for clean_directory."""
     path = Path(path)
     if path.exists():
         shutil.rmtree(path)

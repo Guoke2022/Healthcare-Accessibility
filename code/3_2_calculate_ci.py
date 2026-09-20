@@ -13,7 +13,7 @@ from utils.multiscale import validate_complete_province_parts
 
 
 def validate_ci_inputs(scope, profile):
-
+    """Helper for validate_ci_inputs."""
     for year in CI_YEARS:
         folder=CI_MATCHED_ROOT/str(year)/scope/profile/"parts"
         parts=sorted(folder.glob("province_*.parquet")) if folder.exists() else []
@@ -37,7 +37,7 @@ def clean_sample(df,rank_var,rule="gt0"):
 
 
 def count_cities_in_ci(df, rank_var, rule="gt0"):
-
+    """Helper for count_cities_in_ci."""
     required=[rank_var,"acc","pop","地级码_use"]
     missing=[c for c in required if c not in df.columns]
     if missing:

@@ -111,7 +111,7 @@ def _group_cache_info(group: str, kind: str):
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache = cache_dir / f"{group}_{'acc' if kind == 'accessibility' else 'travel_time'}_stats.csv"
 
-    fingerprint_files = [Path(__file__).resolve(), Path(__file__).resolve().parent / "InequalityIndex.py", Path(__file__).resolve().parent / "multiscale.py", Path(__file__).resolve().parent / "inequality_schema.py"]
+    fingerprint_files = [Path(__file__).resolve(), Path(__file__).resolve().parent / "inequality_metrics.py", Path(__file__).resolve().parent / "multiscale.py", Path(__file__).resolve().parent / "inequality_schema.py"]
     for y in years_to_build:
         fingerprint_files.extend(discover_parts(matched_parts_dir(int(y), scope, profile)))
         if group == "Urban_Rural":
@@ -159,7 +159,7 @@ def _urban_rural_year_cache(year: int, kind: str, scope: str, profile: str) -> t
             "version": 2,
             "inequality_schema_version": INEQUALITY_SCHEMA_VERSION,
         },
-        files=[*parts, Path(gurs), Path(__file__).resolve(), Path(__file__).resolve().parent / "InequalityIndex.py", Path(__file__).resolve().parent / "multiscale.py", Path(__file__).resolve().parent / "inequality_schema.py"],
+        files=[*parts, Path(gurs), Path(__file__).resolve(), Path(__file__).resolve().parent / "inequality_metrics.py", Path(__file__).resolve().parent / "multiscale.py", Path(__file__).resolve().parent / "inequality_schema.py"],
     )
     return cache, fp
 
@@ -551,7 +551,7 @@ def hospital_count_csv() -> Path:
     """
     env = os.environ.get("NC_FIGURE1_HOSPITAL_COUNT_CSV")
     candidates = [Path(env).expanduser() if env else None,
-                  figure_dir("figure 1") / "三甲医院数量统计.csv"]
+                  figure_dir("Figure 1") / "hospital_count_statistics.csv"]
     for p in candidates:
         if p is not None and p.exists():
             return p
@@ -610,3 +610,4 @@ def time_threshold_frame(group: str, key: str) -> pd.DataFrame:
     a = df[df["Year"].eq(base)][[key, "pop_median"]].rename(columns={"pop_median": "14_time"})
     b = df[df["Year"].eq(end)][[key, "pop_median"]].rename(columns={"pop_median": "24_time"})
     return a.merge(b, on=key, how="inner")
+

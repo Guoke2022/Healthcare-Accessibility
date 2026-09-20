@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Build the analysis-ready city-level SEE/CIE regression panel from upstream expansion and covariate data."""
+
 
 from __future__ import annotations
 
@@ -48,6 +50,7 @@ def aggregate_expansion() -> pd.DataFrame:
     all_df = pd.concat(frames, ignore_index=True)
 
 
+    # SEE = new - closed；CIE = increase - decrease。
     out = all_df.groupby(["省级", "地级", "city_level"], as_index=False).agg(
         new_hosp_beds=("new_hosp_beds", "sum"),
         expanded_beds=("expanded_beds", "sum"),
@@ -60,7 +63,7 @@ def aggregate_expansion() -> pd.DataFrame:
     out["net_CIE_beds"] = out["expanded_beds"] - out["decreased_beds"]
     out["net_total_beds"] = out["net_SEE_beds"] + out["net_CIE_beds"]
 
-
+    # Accounting closure QC。
     expected_total = (
         out["new_hosp_beds"] + out["expanded_beds"]
         - out["decreased_beds"] - out["closed_beds"]
@@ -92,6 +95,8 @@ def aggregate_expansion() -> pd.DataFrame:
 
 
 def _load_baseline_fiscal_revenue() -> pd.DataFrame:
+    """Helper for _load_baseline_fiscal_revenue."""
+
 
     ensure_exists(CITY_DATABASE_XLSX, "城市数据库（财政收入控制变量）")
     fiscal_sheet = find_excel_sheet_with_columns(
@@ -292,7 +297,7 @@ def main():
 
     n_fiscal = int(pd.to_numeric(df[FISCAL_BASE_COL], errors="coerce").notna().sum())
     n_fiscal_pc = int(pd.to_numeric(df[LN_FISCAL_PC_BASE_COL], errors="coerce").notna().sum())
-    print(f"5_5 panel: {len(df):,} cities -> {out}")
+    print(f"SEE/CIE regression panel: {len(df):,} cities -> {out}")
     print(
         f"Fiscal control | {FISCAL_BASE_COL} available={n_fiscal:,}/{len(df):,}; "
         f"{LN_FISCAL_PC_BASE_COL} available={n_fiscal_pc:,}/{len(df):,}"

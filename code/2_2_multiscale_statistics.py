@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Module utilities for 2 2 multiscale statistics."""
 
 
 from __future__ import annotations
@@ -94,7 +95,7 @@ def _stage_fingerprint(scope: str, profile: str) -> str:
             *manifests,
             Path(__file__).resolve(),
             code_root / "utils" / "multiscale.py",
-            code_root / "utils" / "InequalityIndex.py",
+            code_root / "utils" / "inequality_metrics.py",
             code_root / "utils" / "inequality_schema.py",
         ],
     )
@@ -135,7 +136,7 @@ def _append_normal_group_rows(
     groupby_col: str | None,
     results: dict[tuple[str, str], list[dict]],
 ) -> None:
-
+    """Helper for _append_normal_group_rows."""
     travel_sink = results[("travel_time", group_name)]
     acc_sink = results[("accessibility", group_name)]
 
@@ -162,6 +163,8 @@ def _append_city_level_rows(
     group_name: str,
     results: dict[tuple[str, str], list[dict]],
 ) -> None:
+    """Helper for _append_city_level_rows."""
+
 
     travel_sink = results[("travel_time", group_name)]
     acc_sink = results[("accessibility", group_name)]
@@ -188,7 +191,7 @@ def _process_year(
     profile: str,
     columns: list[str],
 ) -> tuple[int, dict[tuple[str, str], list[dict]], int]:
-
+    """Helper for _process_year."""
     try:
         df = read_matched_year(year, scope, profile, columns=columns)
     except (FileNotFoundError, KeyError) as e:

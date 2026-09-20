@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+"""Module utilities for multiscale."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -61,7 +61,7 @@ PROVINCE_PART_RE = re.compile(r"^province_(\d{3})_(.+)\.parquet$")
 
 
 def expected_province_keys() -> set[tuple[int, str]]:
-
+    """Helper for expected_province_keys."""
     provinces_path = PREPARED_ROOT / "common" / "provinces.parquet"
     if not provinces_path.exists():
         raise FileNotFoundError(f"缺少 0_1 省级基准表：{provinces_path}")
@@ -79,7 +79,7 @@ def expected_province_keys() -> set[tuple[int, str]]:
 
 
 def province_keys_from_parts(parts: Iterable[Path], label: str = "province parts") -> set[tuple[int, str]]:
-
+    """Helper for province_keys_from_parts."""
     keys = []
     malformed = []
     for path in parts:
@@ -103,6 +103,8 @@ def validate_complete_province_parts(
     *,
     require_complete: bool | None = None,
 ) -> set[tuple[int, str]]:
+    """Helper for validate_complete_province_parts."""
+
 
     parts = list(parts)
     if not parts:
@@ -125,7 +127,7 @@ def validate_complete_province_parts(
 
 
 def parquet_columns(path: Path) -> list[str]:
-
+    """Helper for parquet_columns."""
     try:
         import pyarrow.parquet as pq
     except ImportError as e:
@@ -183,9 +185,9 @@ def weighted_std(data, weights):
 def _inequality_functions():
     """Return the formal inequality functions from the single project implementation."""
     try:
-        from utils.InequalityIndex import weighted_gini, theil_index, atkinson_05, p_high_low_ratio
+        from utils.inequality_metrics import weighted_gini, theil_index, atkinson_05, p_high_low_ratio
     except ImportError as e:
-        raise ImportError("Cannot import utils.InequalityIndex; formal inequality metrics are unavailable.") from e
+        raise ImportError("Cannot import utils.inequality_metrics; formal inequality metrics are unavailable.") from e
     return weighted_gini, theil_index, atkinson_05, p_high_low_ratio
 
 def _sorted_left_quantile(x_sorted: np.ndarray, w_sorted: np.ndarray, q: float) -> float:
@@ -202,7 +204,7 @@ def _sorted_left_quantile(x_sorted: np.ndarray, w_sorted: np.ndarray, q: float) 
 def _gini_from_sorted_nonnegative(x_sorted: np.ndarray, w_sorted: np.ndarray) -> float:
     """Exact weighted-Gini formula from already-sorted nonnegative values.
 
-    This is algebraically identical to ``utils.InequalityIndex.weighted_gini``;
+    This is algebraically identical to ``utils.inequality_metrics.weighted_gini``;
     only the redundant internal argsort is removed.
     """
     if x_sorted.size == 0 or w_sorted.sum() <= 0:
@@ -219,7 +221,12 @@ def _gini_from_sorted_nonnegative(x_sorted: np.ndarray, w_sorted: np.ndarray) ->
 
 
 def _distribution_stats_single_sort(values, weights) -> dict:
+    """Compute weighted distribution statistics with a single stable sort.
 
+    Gini, Theil T and Atkinson (ε=0.5) all use finite accessibility >= 0
+    with finite positive population weights. Zero accessibility is therefore
+    retained consistently across all formal inequality outcomes.
+    """
     x0 = np.asarray(values, dtype=np.float64)
     w0 = np.asarray(weights, dtype=np.float64)
     valid = np.isfinite(x0) & np.isfinite(w0) & (w0 > 0)
@@ -305,6 +312,8 @@ def _safe_inequality(values, weights):
     }
 
 def _snap_invalid_pop_pct(df: pd.DataFrame, pop_all: np.ndarray) -> float:
+    """Helper for _snap_invalid_pop_pct."""
+
 
     if "grid_snap_distance_km" not in df.columns:
         return np.nan
@@ -315,6 +324,8 @@ def _snap_invalid_pop_pct(df: pd.DataFrame, pop_all: np.ndarray) -> float:
 
 
 def calculate_travel_time_stats(df: pd.DataFrame) -> dict:
+    """Helper for calculate_travel_time_stats."""
+
 
     if len(df) == 0:
         return {}

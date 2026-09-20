@@ -1,5 +1,8 @@
 # -*- coding = utf-8 -*-
+# @Author ：YEPEI
+# @Time : 2025/6/2 17:18
 
+# @Software : PyCharm
 
 import seaborn as sns
 import pandas as pd
@@ -31,11 +34,12 @@ def main() -> None:
     output_dir = str(figure_dir('Figure 2'))
     os.makedirs(output_dir, exist_ok=True)
 
-    output_dir2 = str(figure_dir('Map_layers', 'accessibility_change_2014_2024'))
+    output_dir2 = str(figure_dir('Map_layers', 'acc_median_change_14_24'))
     os.makedirs(output_dir2, exist_ok=True)
 
 
     df_province = read_stats('provincial', 'accessibility')[['Year', '省级', 'pop_median']]
+    # print(df_city)
 
     df_province_14 = df_province[df_province['Year'] == 2014]
     df_province_24 = df_province[df_province['Year'] == 2024]
@@ -49,9 +53,10 @@ def main() -> None:
 
     sheng_shp = load_admin_level('province')
     sheng_shp = sheng_shp.merge(df_province_24_14[['省级', '24-14']], left_on='省', right_on='省级', how='left')
+    # print(sheng_shp)
 
 
-    output_path2 = os.path.join(output_dir2, 'acc_median_change_sheng.shp')
+    output_path2 = os.path.join(output_dir2, 'acc_median_change_province.shp')
     sheng_shp.to_file(output_path2)
 
 
@@ -119,6 +124,7 @@ def main() -> None:
 
 
     df_city = read_stats('city', 'accessibility')[['Year', '地级', 'pop_median']]
+    # print(df_city)
 
     df_city_14 = df_city[df_city['Year'] == 2014]
     df_city_24 = df_city[df_city['Year'] == 2024]
@@ -216,6 +222,7 @@ def main() -> None:
 
 
     df_xian = read_stats('county', 'accessibility')[['Year', '县级', 'pop_median']]
+    # print(df_xian)
 
     df_xian_14 = df_xian[df_xian['Year'] == 2014]
     df_xian_24 = df_xian[df_xian['Year'] == 2024]

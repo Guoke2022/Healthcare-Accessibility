@@ -1,5 +1,8 @@
 # -*- coding = utf-8 -*-
+# @Author ：YEPEI
+# @Time : 2025/6/2 17:18
 
+# @Software : PyCharm
 
 import os
 import pandas as pd
@@ -21,6 +24,8 @@ MARKER_SIZE = 11
 
 
 def add_x_break_marker(ax, x_mid, y_pos=0.02, dx=0.12, dy=0.035, lw=1.2):
+    """Helper for add_x_break_marker."""
+
 
     trans = ax.get_xaxis_transform()  # x: data, y: axes fraction
 
@@ -59,6 +64,7 @@ def plot_inequality_on_ax(
     years_to_show: list = None,
     show_yaxis: bool = True
 ):
+    """Helper for plot_inequality_on_ax."""
 
 
     line_color = 'black'

@@ -9,12 +9,15 @@ dependencies:
   - matplotlib
   - seaborn
   - geopandas
+  - shapely
+  - pyproj
+  - pyogrio
   - pyarrow
   - statsmodels
+  - patsy
+  - openpyxl
   - rasterio
-  - pyproj
   - libpysal
   - esda
-  - openpyxl
   - python-docx
   - pytest

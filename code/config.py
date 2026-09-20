@@ -10,7 +10,7 @@ Responsibilities
 ----------------
 1. Resolve repository/data/result/code paths from the repository layout or ``NC_*`` overrides.
 2. Define analysis years, service scope, speed profile and computational settings.
-3. Define canonical stage-output locations shared by numbered analysis scripts.
+3. Define canonical stage-output locations shared by analysis scripts.
 4. Keep path and analysis configuration centralized instead of hard-coding machine paths.
 """
 from __future__ import annotations
@@ -89,6 +89,8 @@ OSM_SNAPSHOT_YEAR_OFFSET = 1
 
 
 def get_osm_snapshot_year(analysis_year: int) -> int:
+    """Helper for get_osm_snapshot_year."""
+
 
     year = int(analysis_year)
     fixed_raw = os.environ.get("NC_FIXED_OSM_ANALYSIS_YEAR", "").strip()
@@ -108,12 +110,12 @@ def get_osm_snapshot_year(analysis_year: int) -> int:
 
 
 def get_osm_snapshot_date(analysis_year: int) -> str:
-
+    """Helper for get_osm_snapshot_date."""
     return f"{get_osm_snapshot_year(analysis_year)}-01-01"
 
 
 def get_osm_snapshot_path(analysis_year: int) -> Path:
-
+    """Helper for get_osm_snapshot_path."""
     snapshot_year = get_osm_snapshot_year(analysis_year)
     return DATA_ROOT / "osm" / f"china-{snapshot_year % 100:02d}0101.osm.pbf"
 
@@ -164,7 +166,7 @@ WORLDPOP_R2025A_ROOT = Path(
 ).expanduser().resolve()
 
 def get_population_raster_path(analysis_year: int) -> Path:
-
+    """Helper for get_population_raster_path."""
     year = int(analysis_year)
     if POPULATION_DATASET == "landscan":
         return DATA_ROOT / "landscan" / f"landscan-global-{year}.tif"
@@ -300,6 +302,8 @@ PLOT_DPI = int(os.environ.get("NC_PLOT_DPI", "600"))
 
 # =============================================================================
 
+# auto_clean：
+
 
 #
 
@@ -317,6 +321,8 @@ def service_scope_tag() -> str:
 # =============================================================================
 
 def get_run_year() -> int:
+    """Helper for get_run_year."""
+
 
     raw = os.environ.get(YEAR_ENV_VAR)
     if raw is None:
@@ -331,11 +337,13 @@ def get_run_year() -> int:
 
 
 def is_year_worker() -> bool:
-
+    """Helper for is_year_worker."""
     return YEAR_ENV_VAR in os.environ
 
 
 def run_script_for_all_years(script_path, years=None, *, workers=None, extra_env=None) -> None:
+    """Helper for run_script_for_all_years."""
+
 
     years = list(YEARS if years is None else years)
     if not years:
@@ -548,12 +556,10 @@ COUNTY_SHP = _env_path("NC_COUNTY_SHP", ADMIN_SHP)
 
 # =============================================================================
 CITY_DYNAMICS_ROOT = RESULT_ROOT / "4_1_city_dynamics"
-HOSPITAL_CHANGES_ROOT = RESULT_ROOT / "5_1_hospital_changes"
-HOSPITAL_DESCRIPTIVE_ROOT = RESULT_ROOT / "5_2_hospital_descriptives"
-SEE_CIE_ANNUAL_ROOT = RESULT_ROOT / "5_3_see_cie_annual"
-SEE_CIE_DESCRIPTIVE_ROOT = RESULT_ROOT / "5_4_see_cie_descriptive"
-SEE_CIE_PANEL_ROOT = RESULT_ROOT / "5_5_see_cie_regression_panel"
-SEE_CIE_REGRESSION_ROOT = RESULT_ROOT / "5_6_see_cie_regression"
+HOSPITAL_CHANGES_ROOT = RESULT_ROOT / "hospital_changes"
+SEE_CIE_ANNUAL_ROOT = RESULT_ROOT / "see_cie_annual"
+SEE_CIE_PANEL_ROOT = RESULT_ROOT / "see_cie_regression_panel"
+SEE_CIE_REGRESSION_ROOT = RESULT_ROOT / "see_cie_regression"
 FIGURE_ROOT = RESULT_ROOT / "Figure"
 FIGURE5_ROOT = FIGURE_ROOT / "Figure 5"
 SHAPLEY_FIGURE_ROOT = FIGURE_ROOT / "Shapley_decomposition"
@@ -576,3 +582,4 @@ HOSPITAL_NAME_SIMILARITY_MIN = float(os.environ.get("NC_HOSPITAL_NAME_SIMILARITY
 HOSPITAL_EXACT_MATCH_REVIEW_KM = float(os.environ.get("NC_HOSPITAL_EXACT_MATCH_REVIEW_KM", "20.0"))
 if HOSPITAL_FUZZY_MATCH_MAX_KM <= 0 or HOSPITAL_EXACT_MATCH_REVIEW_KM <= 0 or not 0 <= HOSPITAL_NAME_SIMILARITY_MIN <= 1:
     raise ValueError("医院匹配阈值配置无效")
+
