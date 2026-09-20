@@ -1,6 +1,6 @@
 # Accessibility gains and uneven equity returns from healthcare expansion in China
 
-Code and reproduction data for the manuscript **“Accessibility gains and uneven equity returns from healthcare expansion in China.”**
+Code and reproduction data for the manuscript **“Accessibility gains and uneven inequality reductions from hospital expansion in China.”**
 
 This repository provides a lightweight workflow for reproducing the manuscript figures and downstream SEE/CIE regression analyses from released intermediate data. The computationally intensive reconstruction from historical OSM networks, population rasters, and hospital-level inputs is retained separately for methodological transparency and is not required for the standard reproduction workflow.
 
