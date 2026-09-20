@@ -1,0 +1,36 @@
+{
+  "schema_version": 4,
+  "description": "Compact public inputs for manuscript reproduction.",
+  "components": [
+    {
+      "name": "multiscale_statistics",
+      "path": "2_2_multiscale_analysis",
+      "purpose": "Figures 1-3"
+    },
+    {
+      "name": "ci_plot_inputs",
+      "path": "3_2_ci_analysis",
+      "purpose": "Figure 4 CI and KDE panels"
+    },
+    {
+      "name": "shapley_summary",
+      "path": "4_2_shapley_decomposition",
+      "purpose": "Shapley decomposition figure"
+    },
+    {
+      "name": "annual_see_cie_city",
+      "path": "5_3_see_cie_annual",
+      "purpose": "Figure 5 pathway and accessibility-change panels"
+    },
+    {
+      "name": "see_cie_regression_panel",
+      "path": "5_5_see_cie_regression_panel",
+      "purpose": "SEE/CIE regression models and Figure 5 effect panels"
+    },
+    {
+      "name": "administrative_boundaries",
+      "path": "static/administrative_boundaries",
+      "purpose": "Province, city, and county map layers"
+    }
+  ]
+}

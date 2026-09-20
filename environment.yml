@@ -1,0 +1,20 @@
+name: healthcare-accessibility
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - seaborn
+  - geopandas
+  - pyarrow
+  - statsmodels
+  - rasterio
+  - pyproj
+  - libpysal
+  - esda
+  - openpyxl
+  - python-docx
+  - pytest

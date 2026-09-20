@@ -1,0 +1,81 @@
+{
+  "created_at": "2026-09-07T23:44:40.916922",
+  "base_year": 2014,
+  "target_year": 2024,
+  "analysis_mode": "main",
+  "shapley_mode": "three_component",
+  "active_factors": [
+    "road",
+    "population",
+    "hospital"
+  ],
+  "base_code": "A000",
+  "target_code": "A111",
+  "profile": "chn_osm_default",
+  "service_scope": "same_province",
+  "run_policy": "auto_clean",
+  "factor_semantics": {
+    "road": "road network / routing conditions from selected year",
+    "population": "active population-demand surface from selected year",
+    "hospital": "hospital presence/location plus observed bed capacity from selected year"
+  },
+  "formal_method": "exact Shapley; average marginal contribution over all 6 permutations",
+  "legacy_method": "equal 1/4 weighting of four marginals plus proportional rescaling (audit only)",
+  "osm_topology_fallback": {
+    "level": "hospital-to-grid travel-time vector (W_ij)",
+    "scope": "pre-specified topology failures plus suspicious new-hospital x old-road counterfactual pairs",
+    "R_handling": "R_j recomputed normally from scenario-specific D_j; no interpolation or cap",
+    "accessibility_winsorization": false
+  },
+  "scenarios": {
+    "A000": {
+      "road": 2014,
+      "population": 2014,
+      "hospital": 2014,
+      "legacy_label": "base road + base pop + base hospital"
+    },
+    "A001": {
+      "road": 2014,
+      "population": 2014,
+      "hospital": 2024,
+      "legacy_label": "base road + base pop + target hospital"
+    },
+    "A010": {
+      "road": 2014,
+      "population": 2024,
+      "hospital": 2014,
+      "legacy_label": "base road + target pop + base hospital"
+    },
+    "A011": {
+      "road": 2014,
+      "population": 2024,
+      "hospital": 2024,
+      "legacy_label": "base road + target pop + target hospital"
+    },
+    "A100": {
+      "road": 2024,
+      "population": 2014,
+      "hospital": 2014,
+      "legacy_label": "target road + base pop + base hospital"
+    },
+    "A101": {
+      "road": 2024,
+      "population": 2014,
+      "hospital": 2024,
+      "legacy_label": "target road + base pop + target hospital"
+    },
+    "A110": {
+      "road": 2024,
+      "population": 2024,
+      "hospital": 2014,
+      "legacy_label": "target road + target pop + base hospital"
+    },
+    "A111": {
+      "road": 2024,
+      "population": 2024,
+      "hospital": 2024,
+      "legacy_label": "target road + target pop + target hospital"
+    }
+  },
+  "elapsed_seconds": 35.92628526687622
+}

@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Public-reproduction runtime files
+.reproduction_work/
+outputs/*
+!outputs/README.md
+
+# Optional raw/HPC workflow outputs
+result/
+result_sensitivity/
+
+# Rust build artifacts
+osm_batch_router_v2/target/
+
+# External raw inputs
+data/external/*
+!data/external/.gitkeep
+
+# Large geospatial/raw-data formats
+*.osm.pbf
+*.tif
+*.tiff
+*.gpkg
+*.feather
+
+# Logs / temporary files
+*.log
+*.tmp
+*.bak
+~$*
