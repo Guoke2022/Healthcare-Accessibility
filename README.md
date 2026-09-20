@@ -1,4 +1,4 @@
-# Accessibility gains and uneven equity returns from healthcare expansion in China
+# Accessibility gains and uneven inequality reductions from hospital expansion in China
 
 Code and reproduction data for the manuscript **“Accessibility gains and uneven inequality reductions from hospital expansion in China.”**
 
