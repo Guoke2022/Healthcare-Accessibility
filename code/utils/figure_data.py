@@ -506,7 +506,7 @@ def read_ci_kde_curves(variable: str | None = None) -> pd.DataFrame:
     """Read compact precomputed KDE curves used by the public Figure 4 workflow.
 
     The private/HPC workflow may derive these curves once from ``3_1_ci_matched``
-    via ``tools/build_ci_plot_inputs.py``.  The public repository releases only
+    The public repository releases only
     the resulting small table, so Figure 4 does not require the ~1.16 GB matched
     CI grid dataset.
     """
