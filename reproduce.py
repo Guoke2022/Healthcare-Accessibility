@@ -40,6 +40,11 @@ SEE_CIE_SCRIPTS = [
     "fig5_3_see_cie_effect_plots.py",
 ]
 
+ROBUSTNESS_SCRIPTS = [
+    "run_province_fe_robustness.py",
+    "run_spatial_robustness.py",
+]
+
 
 def _find_boundary(layer: str) -> Path | None:
     root = REPRO_ROOT / "static" / "administrative_boundaries"
@@ -75,7 +80,6 @@ def _validate_year_endpoints(df: pd.DataFrame | None, path: Path, errors: list[s
 
 def validate_release_inputs() -> list[str]:
     errors: list[str] = []
-
     csv_requirements: dict[Path, set[str]] = {
         REPRO_ROOT / "2_2_multiscale_analysis" / "travel_time" / "national_travel_time_stats.csv": {"Year", "pop_median"},
         REPRO_ROOT / "2_2_multiscale_analysis" / "travel_time" / "provincial_travel_time_stats.csv": {"Year", "省级", "省级码", "pop_median", "pop_pct_lt_60"},
@@ -147,6 +151,7 @@ def validate_release_inputs() -> list[str]:
         for suffix in [".shx", ".dbf", ".prj", ".cpg"]:
             if not shp.with_suffix(suffix).exists():
                 errors.append(f"missing shapefile sidecar: {shp.with_suffix(suffix).relative_to(REPO_ROOT)}")
+
     return errors
 
 
@@ -202,6 +207,7 @@ def runtime_env() -> dict[str, str]:
         "NC_SPEED_PROFILE": PUBLIC_PROFILE,
         "NC_MAKE_PLOTS": "1",
     })
+
     county = _find_boundary("county")
     city = _find_boundary("city")
     province = _find_boundary("province")
@@ -234,26 +240,64 @@ def _copy_tree_if_exists(src: Path, dst: Path) -> None:
 
 def collect_outputs() -> None:
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+
     figure_root = WORK_ROOT / "Figure"
     for number in range(1, 6):
-        _copy_tree_if_exists(figure_root / f"Figure {number}", OUTPUT_ROOT / "figures" / f"Figure_{number}")
-    _copy_tree_if_exists(figure_root / "Shapley_decomposition", OUTPUT_ROOT / "figures" / "Shapley_decomposition")
+        _copy_tree_if_exists(
+            figure_root / f"Figure {number}",
+            OUTPUT_ROOT / "figures" / f"Figure_{number}",
+        )
+
+    _copy_tree_if_exists(
+        figure_root / "Shapley_decomposition",
+        OUTPUT_ROOT / "figures" / "Shapley_decomposition",
+    )
     _copy_tree_if_exists(figure_root / "Map_layers", OUTPUT_ROOT / "map_layers")
-    _copy_tree_if_exists(WORK_ROOT / "see_cie_regression", OUTPUT_ROOT / "regression")
+
+    # Main SEE/CIE outputs; province-FE robustness is nested here when run.
+    _copy_tree_if_exists(
+        WORK_ROOT / "see_cie_regression",
+        OUTPUT_ROOT / "regression",
+    )
+
+    # Spatial robustness is written outside SEE_CIE_REGRESSION_ROOT.
+    _copy_tree_if_exists(
+        WORK_ROOT / "spatial_robustness",
+        OUTPUT_ROOT / "robustness" / "spatial_error",
+    )
 
     generated = sorted(
         str(path.relative_to(OUTPUT_ROOT)).replace("\\", "/")
         for path in OUTPUT_ROOT.rglob("*")
         if path.is_file() and path.name != "generated_files.txt"
     )
-    (OUTPUT_ROOT / "generated_files.txt").write_text("\n".join(generated) + "\n", encoding="utf-8")
+    (OUTPUT_ROOT / "generated_files.txt").write_text(
+        "\n".join(generated) + "\n",
+        encoding="utf-8",
+    )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--section", choices=["all", "figures", "see-cie"], default="all")
-    parser.add_argument("--check-only", action="store_true", help="Validate released inputs and exit.")
-    parser.add_argument("--clean-only", action="store_true", help="Remove generated work/output files and exit.")
+    parser.add_argument(
+        "--section",
+        choices=["all", "figures", "see-cie", "robustness"],
+        default="all",
+        help=(
+            "Section to run. 'all' preserves the compact default workflow "
+            "(figures + SEE/CIE); robustness is optional and run explicitly."
+        ),
+    )
+    parser.add_argument(
+        "--check-only",
+        action="store_true",
+        help="Validate released inputs and exit.",
+    )
+    parser.add_argument(
+        "--clean-only",
+        action="store_true",
+        help="Remove generated work/output files and exit.",
+    )
     args = parser.parse_args()
 
     if args.clean_only:
@@ -268,16 +312,23 @@ def main() -> None:
         for error in errors:
             print(f"  - {error}", file=sys.stderr)
         raise SystemExit(2)
+
     print("Reproduction-data validation passed.")
     if args.check_only:
         return
 
     stage_inputs()
     env = runtime_env()
+
     if args.section in {"all", "figures"}:
         run_scripts(FIGURE_SCRIPTS, env)
+
     if args.section in {"all", "see-cie"}:
         run_scripts(SEE_CIE_SCRIPTS, env)
+
+    if args.section == "robustness":
+        run_scripts(ROBUSTNESS_SCRIPTS, env)
+
     collect_outputs()
     print(f"\nReproduction completed. See: {OUTPUT_ROOT}")
 
