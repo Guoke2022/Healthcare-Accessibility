@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproduce the manuscript figures and SEE/CIE regression results from released data."""
+"""Reproduce the manuscript analyses from released processed data."""
 from __future__ import annotations
 
 import argparse
@@ -238,6 +238,12 @@ def _copy_tree_if_exists(src: Path, dst: Path) -> None:
         shutil.copytree(src, dst)
 
 
+def _merge_tree_if_exists(src: Path, dst: Path) -> None:
+    if src.exists():
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(src, dst, dirs_exist_ok=True)
+
+
 def collect_outputs() -> None:
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 
@@ -254,8 +260,8 @@ def collect_outputs() -> None:
     )
     _copy_tree_if_exists(figure_root / "Map_layers", OUTPUT_ROOT / "map_layers")
 
-    # Main SEE/CIE outputs; province-FE robustness is nested here when run.
-    _copy_tree_if_exists(
+    # Merge regression outputs so separately run sections can coexist.
+    _merge_tree_if_exists(
         WORK_ROOT / "see_cie_regression",
         OUTPUT_ROOT / "regression",
     )
@@ -281,11 +287,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--section",
-        choices=["all", "figures", "see-cie", "robustness"],
-        default="all",
+        choices=["main", "figures", "see-cie", "robustness", "all"],
+        default="main",
         help=(
-            "Section to run. 'all' preserves the compact default workflow "
-            "(figures + SEE/CIE); robustness is optional and run explicitly."
+            "Section to run. The default 'main' runs figures and SEE/CIE; "
+            "'all' also runs the robustness analyses."
         ),
     )
     parser.add_argument(
@@ -320,13 +326,13 @@ def main() -> None:
     stage_inputs()
     env = runtime_env()
 
-    if args.section in {"all", "figures"}:
+    if args.section in {"main", "all", "figures"}:
         run_scripts(FIGURE_SCRIPTS, env)
 
-    if args.section in {"all", "see-cie"}:
+    if args.section in {"main", "all", "see-cie"}:
         run_scripts(SEE_CIE_SCRIPTS, env)
 
-    if args.section == "robustness":
+    if args.section in {"all", "robustness"}:
         run_scripts(ROBUSTNESS_SCRIPTS, env)
 
     collect_outputs()
