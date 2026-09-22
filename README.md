@@ -11,12 +11,6 @@ conda env create -f environment.yml
 conda activate healthcare-accessibility
 ```
 
-Validate the released reproduction inputs:
-
-```bash
-python reproduce.py --check-only
-```
-
 Run the main reproduction workflow:
 
 ```bash
@@ -50,7 +44,7 @@ python reproduce.py --clean-only
 
 ### Shapley decomposition
 
-`data/reproduction/4_2_shapley_decomposition/` contains outcome statistics for the eight combinations of 2014/2024 road-network conditions, population distribution, and hospital supply (`A000`–`A111`). `code/recompute_shapley_from_scenarios.py` recalculates the exact three-factor Shapley decomposition from these eight scenarios, verifies the efficiency property, and compares the recalculated values with the released reference summary before plotting.
+`data/reproduction/4_2_shapley_decomposition/` contains outcome statistics for the eight combinations of 2014/2024 road-network conditions, population distribution, and hospital supply (`A000`–`A111`). `code/recompute_shapley_from_scenarios.py` recalculates the exact three-factor Shapley decomposition from these eight scenarios and regenerates the corresponding plots.
 
 ### SEE/CIE analysis
 
@@ -105,7 +99,7 @@ The main output groups are:
 
 - `outputs/figures/` — regenerated main-text figures and supporting figure files;
 - `outputs/regression/` — main SEE/CIE model outputs and province fixed-effects robustness results;
-- `outputs/robustness/spatial_error/` — spatial-error model results and spatial diagnostics;
+- `outputs/robustness/spatial_error/` — spatial-error model results;
 - `outputs/map_layers/` — GIS layers exported by map-generating scripts;
 - `outputs/generated_files.txt` — index of files currently collected under `outputs/`.
 

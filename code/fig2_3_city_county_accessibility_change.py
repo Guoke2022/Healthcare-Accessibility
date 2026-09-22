@@ -68,24 +68,6 @@ def _assert_unique_key(df: pd.DataFrame, key: str, scale_name: str, year: int) -
         )
 
 
-def _report_unmatched_keys(
-    keys_2014: set[str],
-    keys_2024: set[str],
-    *,
-    scale_name: str,
-) -> None:
-    only_2014 = sorted(keys_2014 - keys_2024)
-    only_2024 = sorted(keys_2024 - keys_2014)
-    if only_2014 or only_2024:
-        print(
-            f"{scale_name}: comparison uses units present in both {BASE_YEAR} and {END_YEAR}. "
-            f"{BASE_YEAR}-only={len(only_2014)}, {END_YEAR}-only={len(only_2024)}"
-        )
-        if only_2014:
-            print(f"  {BASE_YEAR}-only keys (sample): {only_2014[:20]}")
-        if only_2024:
-            print(f"  {END_YEAR}-only keys (sample): {only_2024[:20]}")
-
 
 def _prepare_code_change_frame(
     *,
@@ -111,25 +93,12 @@ def _prepare_code_change_frame(
     )
     code_nonzero = raw[code_col].ne("000000").fillna(False).astype(bool)
     valid = name_valid & code_format_valid & code_nonzero
-    if (~valid).any():
-        bad = raw.loc[~valid, ["Year", name_col, code_col, "pop_median"]].copy()
-        print(
-            f"{scale_name}: dropping {int((~valid).sum())} invalid/placeholder statistics row(s) "
-            "before 2014/2024 comparison:"
-        )
-        print(bad.to_string(index=False))
     raw = raw.loc[valid].copy()
 
     left = raw.loc[raw["Year"].eq(BASE_YEAR), [code_col, name_col, "pop_median"]].copy()
     right = raw.loc[raw["Year"].eq(END_YEAR), [code_col, name_col, "pop_median"]].copy()
     _assert_unique_key(left, code_col, scale_name, BASE_YEAR)
     _assert_unique_key(right, code_col, scale_name, END_YEAR)
-
-    _report_unmatched_keys(
-        set(left[code_col].astype(str)),
-        set(right[code_col].astype(str)),
-        scale_name=scale_name,
-    )
 
     merged = left.merge(
         right,
@@ -139,18 +108,9 @@ def _prepare_code_change_frame(
         suffixes=("_2014", "_2024"),
     )
 
-    # Administrative names may change while codes remain stable.  Keep the 2024
-    # name for human-readable output, but report such changes for auditability.
+    # Administrative names may change while codes remain stable; retain the 2024 name.
     name_2014 = f"{name_col}_2014"
     name_2024 = f"{name_col}_2024"
-    renamed = merged[name_2014].ne(merged[name_2024])
-    if renamed.any():
-        print(f"{scale_name}: {int(renamed.sum())} matched code(s) changed name between years:")
-        print(
-            merged.loc[renamed, [code_col, name_2014, name_2024]]
-            .head(30)
-            .to_string(index=False)
-        )
 
     out = merged.rename(
         columns={
@@ -176,25 +136,12 @@ def _prepare_city_change_frame() -> pd.DataFrame:
     raw["地级"] = _clean_name(raw["地级"])
 
     valid = raw["地级"].notna()
-    if (~valid).any():
-        bad = raw.loc[~valid, ["Year", "地级", "地级码", "pop_median"]].copy()
-        print(
-            f"City: dropping {int((~valid).sum())} null/blank city analysis row(s) "
-            "before 2014/2024 comparison:"
-        )
-        print(bad.to_string(index=False))
     raw = raw.loc[valid].copy()
 
     left = raw.loc[raw["Year"].eq(BASE_YEAR), ["地级", "pop_median"]].copy()
     right = raw.loc[raw["Year"].eq(END_YEAR), ["地级", "pop_median"]].copy()
     _assert_unique_key(left, "地级", "City", BASE_YEAR)
     _assert_unique_key(right, "地级", "City", END_YEAR)
-
-    _report_unmatched_keys(
-        set(left["地级"].astype(str)),
-        set(right["地级"].astype(str)),
-        scale_name="City",
-    )
 
     out = left.merge(
         right,
@@ -252,7 +199,6 @@ def _load_city_analysis_geometry():
     out = tmp.dissolve(by="地级", as_index=False)
     if out["地级"].duplicated().any():
         raise RuntimeError("City geometry still contains duplicate analysis-unit names after dissolve.")
-    print(f"City geometry: {len(out)} polygons built with city_name_norm rules")
     return out
 
 
@@ -271,18 +217,9 @@ def _prepare_admin_geometry(level: str, join_key: str, scale_name: str):
             admin[join_key].str.fullmatch(r"\d{6}", na=False).fillna(False).astype(bool)
             & admin[join_key].ne("000000").fillna(False).astype(bool)
         )
-        if (~valid).any():
-            print(
-                f"{scale_name} geometry: dropping {int((~valid).sum())} "
-                f"invalid/placeholder {join_key} polygon record(s)."
-            )
         admin = admin.loc[valid].copy()
 
     if admin[join_key].duplicated().any():
-        # This is defensive.  The current released direct boundaries are unique,
-        # while city geometries are explicitly dissolved above.
-        n_dup = int(admin.loc[admin[join_key].duplicated(keep=False), join_key].nunique())
-        print(f"{scale_name} geometry: dissolving {n_dup} duplicated {join_key} key(s).")
         admin = admin.dissolve(by=join_key, as_index=False)
 
     if admin[join_key].duplicated().any():
@@ -330,7 +267,6 @@ def _export_change_layer(
         raise RuntimeError(f"{scale_name} exported layer contains duplicate {join_key} values.")
 
     layer.to_file(output_path, encoding="utf-8")
-    print(f"{scale_name} map layer saved: {output_path} | polygons={len(layer)}")
 
 
 def _plot_change_histogram(
@@ -403,8 +339,6 @@ def _plot_change_histogram(
     plt.savefig(output_path, dpi=PLOT_DPI, transparent=True, bbox_inches="tight")
     plt.close()
 
-    print(f"{os.path.basename(output_path)} x ticks: {np.round(ax.get_xticks(), 2).tolist()}")
-
 
 def main() -> None:
     output_dir = str(figure_dir("Figure 2"))
@@ -422,8 +356,6 @@ def main() -> None:
         code_col="省级码",
         scale_name="Province",
     )
-    print(f"Provinces compared (present in both years): {len(df_province)}")
-    print(f"Provinces with accessibility gains: {(df_province['24-14'] > 0).sum()}")
 
     _export_change_layer(
         change_df=df_province,
@@ -444,8 +376,6 @@ def main() -> None:
     # City: exact city_name_norm analysis key (written as 地级 in stats)
     # ------------------------------------------------------------------
     df_city = _prepare_city_change_frame()
-    print(f"Cities compared (present in both years): {len(df_city)}")
-    print(f"Cities with accessibility gains: {(df_city['24-14'] > 0).sum()}")
 
     _export_change_layer(
         change_df=df_city,
@@ -471,8 +401,6 @@ def main() -> None:
         code_col="县级码",
         scale_name="County",
     )
-    print(f"Counties compared (present in both years): {len(df_county)}")
-    print(f"Counties with accessibility gains: {(df_county['24-14'] > 0).sum()}")
 
     _export_change_layer(
         change_df=df_county,

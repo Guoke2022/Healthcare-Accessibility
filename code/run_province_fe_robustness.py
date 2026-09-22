@@ -117,7 +117,6 @@ def main():
 
     effect_rows = []
     coef_rows = []
-    sample_rows = []
 
     families = [
         {
@@ -168,20 +167,9 @@ def main():
             raise KeyError(f"{spec['outcome']} {spec['model_family']} missing columns: {missing}")
         d = df[needed].dropna().copy()
         if len(d) < 20:
-            print(f"Warning: skip {spec['outcome']} {spec['model_family']}, N={len(d)}")
-            continue
-
-        counts = d.groupby("省级", observed=False).size().sort_values()
-        singleton = counts[counts == 1].index.tolist()
-        sample_rows.append({
-            "outcome": spec["outcome"],
-            "model_family": spec["model_family"],
-            "N": len(d),
-            "n_provinces": int(d["省级"].nunique()),
-            "n_singleton_provinces": len(singleton),
-            "singleton_provinces": "; ".join(singleton),
-            **{f"N_{level}": int((d["city_level_4"] == level).sum()) for level in CITY_ORDER_4},
-        })
+            raise RuntimeError(
+                f"Insufficient observations for {spec['outcome']} {spec['model_family']}: N={len(d)}"
+            )
 
         main_formula = (
             f"{spec['y']} ~ {spec['y0']} + {controls} + {spec['terms']} + {city_fe}"
@@ -207,13 +195,10 @@ def main():
 
     effects = pd.DataFrame(effect_rows)
     coefs = pd.DataFrame(coef_rows)
-    samples = pd.DataFrame(sample_rows)
-
     effects.to_csv(OUT_ROOT / "province_fe_overall_effects_long.csv", index=False, encoding="utf-8-sig")
     coefs.to_csv(OUT_ROOT / "province_fe_model_coefficients_long.csv", index=False, encoding="utf-8-sig")
-    samples.to_csv(OUT_ROOT / "province_fe_sample_accounting.csv", index=False, encoding="utf-8-sig")
 
-    # Wide reviewer/SI-friendly comparison table.
+    # Compact comparison table.
     wide = effects.copy()
     wide["display"] = [_display(e, p) for e, p in zip(wide["effect"], wide["p"])]
     wide["column"] = np.select(
@@ -238,12 +223,6 @@ def main():
 
     readme = f"""Province fixed-effects robustness (overall pathway associations only)\n\nMain model already controls for:\n  population density; {GDP_BASE_COL}; GDP growth; {RESPOP_BASE_COL};\n  net population inflow; resident population growth; and {FISCAL_BASE_COL}.\n\nProvince-FE models add C(province_fe) and are also reported with province-clustered SE.\nNo SEE/CIE x city-size interactions are estimated here because four of seven mega cities\nare province-level municipalities and provide no within-province city variation for\nidentifying mega-city interaction effects.\n\nInterpretation: province FE absorb common province-level institutional/policy environments,\nbut do not eliminate city-level endogeneity. Coefficients remain adjusted associations.\n"""
     (OUT_ROOT / "README.txt").write_text(readme, encoding="utf-8")
-
-    print("=" * 88)
-    print("Province fixed-effects robustness complete")
-    print(f"Output: {OUT_ROOT}")
-    print(table.to_string(index=False))
-    print("=" * 88)
 
 
 if __name__ == "__main__":

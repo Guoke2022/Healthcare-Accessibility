@@ -210,8 +210,6 @@ def main():
         SEE_CIE_REGRESSION_ROOT / "see_vs_cie_wald_accessibility.csv", index=False, encoding="utf-8-sig"
     )
 
-    print(f"SEE/CIE regressions completed | accessibility N={len(df_acc)}")
-
 
 if __name__ == "__main__":
     main()

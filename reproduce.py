@@ -319,8 +319,8 @@ def main() -> None:
             print(f"  - {error}", file=sys.stderr)
         raise SystemExit(2)
 
-    print("Reproduction-data validation passed.")
     if args.check_only:
+        print("Reproduction-data validation passed.")
         return
 
     stage_inputs()

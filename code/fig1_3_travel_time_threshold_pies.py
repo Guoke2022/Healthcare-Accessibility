@@ -55,19 +55,6 @@ def clean_admin_frame(df: pd.DataFrame, join_key: str, scale_name: str) -> pd.Da
         key = key.str.zfill(6)
         invalid = invalid | ~key.str.fullmatch(r'\d{6}', na=False) | key.eq('000000')
 
-    if invalid.any():
-        dropped = out.loc[invalid, [join_key, '14_time', '24_time']].copy()
-        reason = (
-            f"missing/blank/invalid {join_key}"
-            if join_key == '县级码'
-            else f"missing/blank {join_key}"
-        )
-        print(
-            f"{scale_name}: dropping {int(invalid.sum())} row(s) with {reason} "
-            f"before Fig.1 c-e classification:"
-        )
-        print(dropped.to_string(index=False))
-
     out = out.loc[~invalid].copy()
     out[join_key] = key.loc[~invalid]
 
@@ -97,18 +84,12 @@ def add_threshold_class(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_pie(df: pd.DataFrame, output_path: str, scale_name: str) -> None:
-    """Plot the inset pie and print the three category counts."""
+    """Plot the inset pie for the three travel-time threshold classes."""
     classified = add_threshold_class(df)
 
     num_2014 = int((classified['class_id'] == 1).sum())
     new_in_2024 = int((classified['class_id'] == 2).sum())
     remaining_2024 = int((classified['class_id'] == 3).sum())
-
-    print(
-        f"{scale_name}: 2014 <=60 min = {num_2014}; "
-        f"newly <=60 min by 2024 = {new_in_2024}; "
-        f"2024 >60 min = {remaining_2024}; total = {len(classified)}"
-    )
 
 
     sizes = [remaining_2024, new_in_2024, num_2014]
@@ -164,18 +145,9 @@ def load_fig1_admin_level(admin_level: str):
     tmp['地级'] = city_key
 
     invalid = tmp['地级'].isna() | tmp['地级'].eq('')
-    if invalid.any():
-        print(
-            f"City geometry: dropping {int(invalid.sum())} county polygon(s) "
-            "that still have no city_name_norm key."
-        )
-        tmp = tmp.loc[~invalid].copy()
+    tmp = tmp.loc[~invalid].copy()
 
     out = tmp.dissolve(by='地级', as_index=False)
-    print(
-        f"City geometry built with 2_1 city_name_norm rules: "
-        f"{len(out)} analysis-unit polygons"
-    )
     return out
 
 def export_arcgis_layer(
@@ -219,19 +191,6 @@ def export_arcgis_layer(
         # not represent county analysis units and are excluded upstream from the
         # county statistics, so they must not participate in the Fig.1e join.
         admin_valid = admin[join_key].str.fullmatch(r'\d{6}', na=False) & admin[join_key].ne('000000')
-        n_invalid_admin = int((~admin_valid).sum())
-        if n_invalid_admin:
-            invalid_codes = (
-                admin.loc[~admin_valid, join_key]
-                .astype('string')
-                .value_counts(dropna=False)
-                .head(10)
-                .to_dict()
-            )
-            print(
-                f"{scale_name} geometry: dropping {n_invalid_admin} polygon record(s) "
-                f"with invalid/placeholder {join_key}; sample counts={invalid_codes}"
-            )
         admin = admin.loc[admin_valid].copy()
 
         # A county may be represented by multiple polygon records (e.g. detached
@@ -240,12 +199,6 @@ def export_arcgis_layer(
         # statistical units.
         dup_mask = admin[join_key].duplicated(keep=False)
         if dup_mask.any():
-            n_dup_rows = int(dup_mask.sum())
-            n_dup_codes = int(admin.loc[dup_mask, join_key].nunique())
-            print(
-                f"{scale_name} geometry: dissolving {n_dup_rows} polygon record(s) "
-                f"across {n_dup_codes} duplicated valid {join_key} code(s)."
-            )
             admin = admin.dissolve(by=join_key, as_index=False)
 
         # Defensive check: clean_admin_frame() should already have removed
@@ -285,14 +238,6 @@ def export_arcgis_layer(
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     layer.to_file(output_path, encoding='utf-8')
-
-    print(f"{scale_name} ArcGIS shp saved: {output_path}")
-    print(
-        f"  class counts: "
-        f"1={(layer['class_id'] == 1).sum()}, "
-        f"2={(layer['class_id'] == 2).sum()}, "
-        f"3={(layer['class_id'] == 3).sum()}"
-    )
 
 
 def main() -> None:
