@@ -70,7 +70,6 @@ def main() -> None:
         title = PROVINCE_EN.get(str(province), str(province))
         out = out_dir / f"{title}_travel_time_trends.png"
         plot_panel(data.sort_values("Year"), title, out)
-        print(f"generated: {out}", flush=True)
 
 
 if __name__ == "__main__":

@@ -89,7 +89,6 @@ def main() -> None:
     out = FIGURE5_ROOT / "Fig_acc_scale_reversal_mirrored_BOX.png"
     fig.savefig(out, dpi=PLOT_DPI, bbox_inches="tight")
     plt.close(fig)
-    print(f"Figure 5b -> {out}")
 
 
 if __name__ == "__main__":

@@ -51,7 +51,8 @@ def main() -> None:
     df_time_avg = df_time_avg[['省级英文', 'pop_median']].sort_values('pop_median', ascending=False)
 
 
-    print(df_time_avg.loc[df_time_avg['省级英文'] == "Tibet", 'pop_median'])
+    # Display-only cap used in the manuscript panel; provincial ranking is
+    # calculated from the uncapped values above.
     df_time_avg.loc[df_time_avg['省级英文'] == "Tibet", 'pop_median'] = 120
 
 

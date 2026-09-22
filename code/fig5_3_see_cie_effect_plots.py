@@ -480,7 +480,6 @@ def main():
     plt.savefig(outpath, dpi=PLOT_DPI, bbox_inches="tight")
     plt.close(fig)
 
-    print(f"fig5_3 effect plot saved: {outpath}")
 
 
 if __name__ == "__main__":

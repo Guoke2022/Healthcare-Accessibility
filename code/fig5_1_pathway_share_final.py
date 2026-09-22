@@ -67,7 +67,6 @@ def main() -> None:
     out = FIGURE5_ROOT / OUTPUT_NAME
     fig.savefig(out, dpi=PLOT_DPI, bbox_inches="tight")
     plt.close(fig)
-    print(f"Figure 5a -> {out}")
 
 
 if __name__ == "__main__":

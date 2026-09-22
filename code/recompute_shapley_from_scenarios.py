@@ -163,7 +163,7 @@ def compare_with_reference(
     rtol: float = 1e-9,
     atol: float = 1e-10,
 ) -> None:
-    """Verify that recomputed values agree with the released audit/reference summary."""
+    """Verify that recomputed values agree with the released decomposition summary."""
     key = ["outcome", "factor"]
     numeric = [
         "contribution_abs",
@@ -177,7 +177,7 @@ def compare_with_reference(
     merged = left.merge(right, on=key, how="outer", suffixes=("_new", "_ref"), indicator=True)
     if not merged["_merge"].eq("both").all():
         bad = merged.loc[~merged["_merge"].eq("both"), key + ["_merge"]]
-        raise ValueError(f"Reference Shapley row mismatch:\n{bad.to_string(index=False)}")
+        raise ValueError(f"Released Shapley summary row mismatch:\n{bad.to_string(index=False)}")
 
     failures: list[str] = []
     for col in numeric:
@@ -192,7 +192,7 @@ def compare_with_reference(
                     f"recomputed={a[i]:.12g}, reference={b[i]:.12g}"
                 )
     if failures:
-        raise ValueError("Recomputed Shapley values differ from reference:\n  - " + "\n  - ".join(failures))
+        raise ValueError("Recomputed Shapley values differ from the released summary:\n  - " + "\n  - ".join(failures))
 
 
 def main() -> None:
@@ -211,21 +211,12 @@ def main() -> None:
     if reference_path.exists():
         reference = pd.read_csv(reference_path, encoding="utf-8-sig")
         compare_with_reference(recomputed, reference)
-        print("Shapley reference comparison: PASS")
 
     generated_dir_path = RESULT_ROOT / "4_2_shapley_decomposition" / "shapley_summary_recomputed.csv"
     generated_root_path = RESULT_ROOT / "shapley_summary.csv"
     recomputed.to_csv(generated_dir_path, index=False, encoding="utf-8-sig")
     recomputed.to_csv(generated_root_path, index=False, encoding="utf-8-sig")
 
-    print("Recomputed exact Shapley decomposition from 8 scenario rows.")
-    for outcome in OUTCOMES:
-        sub = recomputed[recomputed["outcome"].eq(outcome)]
-        parts = ", ".join(
-            f"{row.factor}={row.share_pct:+.1f}%" for row in sub.itertuples(index=False)
-        )
-        print(f"  {outcome}: {parts}")
-    print("Generated:", generated_root_path)
 
 
 if __name__ == "__main__":

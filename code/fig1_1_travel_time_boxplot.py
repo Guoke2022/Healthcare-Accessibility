@@ -20,7 +20,6 @@ pd.set_option('display.float_format', '{:.2f}'.format)
 def main() -> None:
 
     df = read_stats('national', 'travel_time')
-    # print(df)
 
     LABEL_FONTSIZE = 23 # 25
     TICKS_FONTSIZE = 18 # 20

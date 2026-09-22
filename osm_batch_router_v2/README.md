@@ -31,7 +31,7 @@ There is no hard snap-distance gate.
 
 For a legal edge snap, the router stores the segment ID and projected fraction and distributes access cost to the segment endpoints according to that fraction. This represents a virtual access point without explicitly duplicating the augmented graph. Origin/destination pairs snapped to the same segment can use the direct within-segment cost when directionality permits.
 
-Snap distance is retained as a diagnostic but is not used as an exclusion threshold.
+Snap distance is recorded in the routing output but is not used as an exclusion threshold.
 
 ## Routing outputs
 
@@ -39,7 +39,7 @@ For each configured speed profile, the router:
 
 - performs hospital-centred bounded shortest-path searches and writes sparse hospital-to-grid travel records within the requested cutoff;
 - performs a multi-source shortest-path calculation on the same snapped network to obtain nearest-hospital travel time for every reachable grid;
-- writes routing, road-class, snapping, and connected-component diagnostics used by the Python workflow.
+- writes routing, road-class, snapping, and connected-component metadata used by the Python workflow.
 
 ## Build
 

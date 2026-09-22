@@ -262,7 +262,6 @@ if __name__ == '__main__':
         yticks=None,
         years_to_show=None
     )
-    print(f"Plot saved to: {output_file}")
 
     # =========================
 
@@ -283,7 +282,6 @@ if __name__ == '__main__':
         years_to_show=None,
         keep_yaxis_first_only=True
     )
-    print(f"Plot saved to: {output_file}")
 
     # =========================
 
@@ -309,7 +307,6 @@ if __name__ == '__main__':
         x_break_between=(2016, 2019),
         hide_all_yaxis=True
     )
-    print(f"Plot saved to: {output_file}")
 
     # =========================
 
@@ -335,8 +332,7 @@ if __name__ == '__main__':
     for lvl in CITY_LEVEL_ORDER:
         df_sub = df[df['city_level'] == lvl].copy()
         if df_sub.empty:
-            print(f"[Warning] No data for city_level = {lvl}")
-            continue
+            raise ValueError(f"No data available for city_level = {lvl}")
         dfs.append(df_sub)
         labels.append(LABEL_MAP.get(lvl, lvl))
 
@@ -351,4 +347,3 @@ if __name__ == '__main__':
         years_to_show=None,
         keep_yaxis_first_only=True
     )
-    print(f"Plot saved to: {output_file}")

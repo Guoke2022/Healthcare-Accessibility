@@ -8,7 +8,7 @@ This directory contains the processed analytical inputs consumed by `reproduce.p
 |---|---|---|
 | `2_2_multiscale_analysis/` | Annual travel-time and accessibility summaries at multiple spatial scales | Figures 1–3 and related summary statistics |
 | `3_2_ci_analysis/` | GDP-ranked concentration index estimates and plotting coordinates | Figure 4 |
-| `4_2_shapley_decomposition/` | Eight counterfactual scenario summaries and reference decomposition output | Exact Shapley recomputation |
+| `4_2_shapley_decomposition/` | Eight counterfactual scenario summaries and decomposition summary | Exact Shapley recomputation |
 | `see_cie_regression_panel/` | City-level SEE/CIE analytical panel | Figure 5, main regressions, and robustness analyses |
 | `static/administrative_boundaries/` | 2023 province, city, and county boundaries | Mapped figures and spatial analysis |
 
@@ -40,7 +40,7 @@ The CI calculations rank observations by per-capita GDP and weight accessibility
 
 `4_2_shapley_decomposition/scenario_stats.csv` contains the outcome statistics for all eight combinations of the three Shapley factors. Scenario codes follow the order **road–population–hospital**: `0` denotes the 2014 state and `1` the 2024 state. For example, `A101` uses 2024 road conditions, 2014 population, and 2024 hospital supply.
 
-The decomposition covers population-weighted accessibility, Gini, Theil, and Atkinson (ε = 0.5). `shapley_summary.csv` is retained as a reference output; `reproduce.py` recalculates the exact Shapley values from `scenario_stats.csv` before plotting.
+The decomposition covers population-weighted accessibility, Gini, Theil, and Atkinson (ε = 0.5). `shapley_summary.csv` contains the corresponding decomposition summary; `reproduce.py` recalculates the exact Shapley values from `scenario_stats.csv` before plotting.
 
 ## SEE/CIE regression panel
 

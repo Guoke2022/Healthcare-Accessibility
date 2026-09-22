@@ -189,9 +189,9 @@ def resolve_osmium(project_root: Path) -> str:
         env_var="NC_OSMIUM_EXE",
         project_root=project_root,
         install_hint=(
-            "若当前环境确实未安装，可在已激活的 NC_appeal 环境执行：\n"
+            "If osmium is not installed in the active Conda environment, run:\n"
             "  conda install -c conda-forge osmium-tool\n"
-            "若 osmium 已安装在其他位置，可设置 NC_OSMIUM_EXE 指向原安装目录中的 osmium.exe。"
+            "If osmium is installed elsewhere, set NC_OSMIUM_EXE to the executable path."
         ),
     )
 

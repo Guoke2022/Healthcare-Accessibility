@@ -4,7 +4,7 @@
 
 - `figures/` — regenerated main-text figures and supporting figure files.
 - `regression/` — main SEE/CIE model outputs and province fixed-effects robustness results.
-- `robustness/spatial_error/` — spatial-error model results and spatial diagnostics.
+- `robustness/spatial_error/` — spatial-error robustness results.
 - `map_layers/` — GIS layers exported by map-generating scripts.
 - `generated_files.txt` — index of files currently collected under `outputs/`.
 

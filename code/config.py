@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """Shared configuration module for the analysis code.
 
-This file is **not an executable workflow entry point**. Reviewers/readers should
-run ``python reproduce.py`` from the repository root. Authors reconstructing the
-large upstream geospatial workflow can run ``python code/reconstruct_from_raw_inputs.py``
-after supplying the non-released raw inputs.
+This file is **not an executable workflow entry point**. Run ``python reproduce.py``
+from the repository root for the released workflow. The larger upstream geospatial
+workflow can be run with ``python code/reconstruct_from_raw_inputs.py`` after
+supplying the required source datasets.
 
 Responsibilities
 ----------------

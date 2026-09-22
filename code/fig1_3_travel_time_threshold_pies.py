@@ -34,22 +34,12 @@ CLASS_LABELS = {
 
 
 def clean_admin_frame(df: pd.DataFrame, join_key: str, scale_name: str) -> pd.DataFrame:
-    """Remove rows that do not represent a valid administrative unit.
-
-    ``pandas.merge`` can match null keys across years, so a row with a missing
-    province/city/county key may survive ``time_threshold_frame`` and otherwise
-    be counted as if it were a real administrative unit.  Fig. 1c-e must count
-    only named/coded administrative units that can be mapped.
-    """
+    """Normalize administrative keys and retain map-compatible analysis units."""
     out = df.copy()
 
     key = out[join_key].astype('string').str.strip().str.replace(r'\.0$', '', regex=True)
 
-    # Province/city keys only need to be non-empty. County statistics must also
-    # exclude placeholder/malformed codes such as 000000; these are aggregate or
-    # non-mappable records rather than county analysis units. Filtering happens
-    # here, before the Fig.1e counts are calculated, so the inset pie and the
-    # exported polygon layer always use the same county universe.
+    # Province/city keys must be non-empty; county keys must be valid six-digit codes.
     invalid = key.isna() | key.eq('')
     if join_key == '县级码':
         key = key.str.zfill(6)
@@ -186,23 +176,17 @@ def export_arcgis_layer(
         admin[join_key] = admin[join_key].str.zfill(6)
         attrs[join_key] = attrs[join_key].str.zfill(6)
 
-        # The fixed county-boundary layer contains repeated placeholder records
-
-        # not represent county analysis units and are excluded upstream from the
-        # county statistics, so they must not participate in the Fig.1e join.
+        # Retain valid six-digit county analysis codes for the map join.
         admin_valid = admin[join_key].str.fullmatch(r'\d{6}', na=False) & admin[join_key].ne('000000')
         admin = admin.loc[admin_valid].copy()
 
-        # A county may be represented by multiple polygon records (e.g. detached
-        # parts/islands).  Fig.1e needs one analysis unit per county code, so
-        # dissolve duplicate valid codes instead of treating them as duplicate
-        # statistical units.
+        # Dissolve multipart records to one analysis unit per county code.
         dup_mask = admin[join_key].duplicated(keep=False)
         if dup_mask.any():
             admin = admin.dissolve(by=join_key, as_index=False)
 
         # Defensive check: clean_admin_frame() should already have removed
-        # invalid county codes before classification/counting.
+        # county codes before classification/counting.
         attr_valid = attrs[join_key].str.fullmatch(r'\d{6}', na=False) & attrs[join_key].ne('000000')
         if (~attr_valid).any():
             bad = attrs.loc[~attr_valid, [join_key, 't14_med', 't24_med']].copy()

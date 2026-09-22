@@ -405,9 +405,6 @@ def main() -> None:
     fig.savefig(out_grid, dpi=DPI, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
-    print("Done.")
-    print("Saved 4 single panels and 1 composite to:", out_dir)
-    print("Composite:", out_grid)
 
 
 if __name__ == "__main__":

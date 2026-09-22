@@ -146,7 +146,6 @@ def main() -> None:
         safe = group_name.replace("/", "_").replace(" ", "_")
         _save_curve(points, out / f"acc_concentration_curves_by_GDP_city_level_{safe}.png", display.get(group_name, group_name))
 
-    print(f"Figure 4 CI plots -> {out}")
 
 
 if __name__ == "__main__":

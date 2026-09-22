@@ -151,7 +151,7 @@ def stage3_specs():
 
 
 def build_knn_weights(city_geo, city_order, k=4):
-    """Build the same row-standardized KNN weights used in spatial diagnostics."""
+    """Build row-standardized KNN weights for the spatial analysis."""
     try:
         from libpysal.weights import KNN
     except ImportError as e:
@@ -218,7 +218,7 @@ def fit_sem_ml(y, X, W, coef_names):
     """Gaussian ML spatial-error model with observed-Hessian covariance.
 
     Returns a dict containing beta, beta covariance, lambda, lambda SE, sigma2,
-    log-likelihood and numerical diagnostics.
+    log-likelihood and covariance estimates.
     """
     try:
         from scipy.optimize import minimize_scalar
@@ -304,8 +304,6 @@ def fit_sem_ml(y, X, W, coef_names):
 
     H = np.asarray(approx_hess(theta, _full_nll, epsilon=HESSIAN_EPS), dtype=float)
     H = 0.5 * (H + H.T)
-    h_eigs = np.linalg.eigvalsh(H)
-    h_cond = float(np.linalg.cond(H))
     cov_theta = np.linalg.pinv(H, rcond=1e-12)
     cov_theta = 0.5 * (cov_theta + cov_theta.T)
     cov_beta = cov_theta[:p, :p]
@@ -313,8 +311,7 @@ def fit_sem_ml(y, X, W, coef_names):
     beta_var = np.diag(cov_beta)
     if np.any(beta_var < -1e-8):
         warnings.warn(
-            "SEM observed-Hessian covariance has materially negative beta variances; "
-            "check Hessian diagnostics."
+            "SEM covariance matrix has materially negative coefficient variances."
         )
     beta_se = np.sqrt(np.maximum(beta_var, 0.0))
     z_beta = np.divide(beta, beta_se, out=np.full_like(beta, np.nan), where=beta_se > 0)
@@ -343,11 +340,6 @@ def fit_sem_ml(y, X, W, coef_names):
         "llf": llf,
         "residual_u": np.asarray(residual_u, dtype=float),
         "innovation": np.asarray(innovation, dtype=float),
-        "optimizer_success": bool(opt.success),
-        "optimizer_nfev": int(getattr(opt, "nfev", -1)),
-        "hessian_min_eig": float(np.min(h_eigs)),
-        "hessian_condition": h_cond,
-        "lambda_near_bound": bool(abs(lam) > 0.95 * LAMBDA_BOUND),
     }
 
 
@@ -426,11 +418,7 @@ def _coef_rows_sem(fit, *, model_name, outcome, family, n):
 
 
 def _si_p_to_star(pval: float) -> str:
-    """Significance stars used in the publication-ready Supplementary Table SZ.
-
-    Thresholds are intentionally stricter than any internal exploratory/QC
-    convention: * P < 0.10; ** P < 0.05; *** P < 0.01.
-    """
+    """Significance stars used in the supplementary comparison table."""
     try:
         p = float(pval)
     except (TypeError, ValueError):
@@ -447,12 +435,7 @@ def _si_p_to_star(pval: float) -> str:
 
 
 def write_supplementary_compact_docx(effects: pd.DataFrame, out_path: Path) -> None:
-    """Write a compact, publication-ready Word table for Supplementary Information.
-
-    The table pivots city-size groups to columns and reports OLS and SEM estimates
-    on two lines within each cell.  This keeps the substantive OLS-versus-SEM
-    comparison auditable without reproducing the full 44-row internal table.
-    """
+    """Write a compact Word table comparing OLS and SEM estimates by city size."""
     try:
         from docx import Document
         from docx.enum.section import WD_ORIENT
@@ -572,8 +555,8 @@ def write_supplementary_compact_docx(effects: pd.DataFrame, out_path: Path) -> N
     title.paragraph_format.space_after = Pt(5)
     title.paragraph_format.keep_with_next = True
     tr = title.add_run(
-        "Supplementary Table SZ. Comparison of OLS and spatial-error model estimates "
-        "of hospital-expansion associations across city-size groups."
+        "Comparison of OLS and spatial-error model estimates of "
+        "hospital-expansion associations across city-size groups."
     )
     tr.bold = True
     tr.font.name = "Arial"
@@ -719,17 +702,10 @@ def main():
     city_geo = build_city_geometry()
     geo_names = set(city_geo["city_name"].astype(str))
 
-    all_reg_cities = sorted(set(df["地级"].dropna().astype(str)))
-    unmatched_all = sorted(set(all_reg_cities) - geo_names)
-    pd.DataFrame({"地级": unmatched_all}).to_csv(
-        OUT_ROOT / "unmatched_regression_cities.csv", index=False, encoding="utf-8-sig"
-    )
-
     summary_rows = []
     coef_rows = []
     effect_rows = []
     moran_rows = []
-    match_rows = []
 
     for spec in stage3_specs():
         required = list(dict.fromkeys(spec["columns"] + ["地级"]))
@@ -745,10 +721,6 @@ def main():
             raise ValueError(f"{spec['model']} has duplicate city observations: {names[:20]}")
 
         matched = d["地级"].isin(geo_names)
-        for city, ok in zip(d["地级"], matched):
-            match_rows.append({
-                "model": spec["model"], "地级": city, "geometry_matched": bool(ok)
-            })
         if not matched.all():
             bad = d.loc[~matched, "地级"].astype(str).tolist()
             raise ValueError(
@@ -780,7 +752,7 @@ def main():
         )
         n = len(d_used)
 
-        # Gaussian OLS llf vs SEM llf gives a conventional 1-df LR diagnostic for lambda.
+        # Gaussian OLS llf versus SEM llf gives a conventional 1-df LR test for lambda.
         lr = max(0.0, 2.0 * (fit["llf"] - float(ols.llf)))
         lr_p = float(chi2.sf(lr, df=1))
 
@@ -806,11 +778,6 @@ def main():
             "OLS_resid_moran_p": ols_moran["p_perm"],
             "SEM_innovation_moran_I": sem_eps_moran["moran_I"],
             "SEM_innovation_moran_p": sem_eps_moran["p_perm"],
-            "optimizer_success": fit["optimizer_success"],
-            "optimizer_nfev": fit["optimizer_nfev"],
-            "hessian_min_eig": fit["hessian_min_eig"],
-            "hessian_condition": fit["hessian_condition"],
-            "lambda_near_bound": fit["lambda_near_bound"],
         })
 
         coef_rows.extend(_coef_rows_sem(
@@ -840,17 +807,6 @@ def main():
                     "SEM_effect": sem_eff,
                     "SEM_se": sem_se,
                     "SEM_p": sem_p,
-                    "SEM_minus_OLS": sem_eff - ols_eff,
-                    "pct_change_abs": (
-                        (abs(sem_eff) - abs(ols_eff)) / abs(ols_eff) * 100.0
-                        if np.isfinite(ols_eff) and abs(ols_eff) > 1e-12 else np.nan
-                    ),
-                    "sign_flip": bool(
-                        np.isfinite(ols_eff) and np.isfinite(sem_eff)
-                        and np.sign(ols_eff) != np.sign(sem_eff)
-                        and abs(ols_eff) > 1e-12 and abs(sem_eff) > 1e-12
-                    ),
-                    "sig10_flip": bool((ols_p < 0.10) != (sem_p < 0.10)),
                 })
 
         for statistic, vals, mr in [
@@ -869,45 +825,17 @@ def main():
                 **mr,
             })
 
-        print(
-            f"{spec['model']}: N={n} | lambda={fit['lambda']:.4f} "
-            f"(p={fit['lambda_p']:.4g}) | "
-            f"OLS resid Moran I={ols_moran['moran_I']:.4f}, p={ols_moran['p_perm']:.4g} | "
-            f"SEM innovation I={sem_eps_moran['moran_I']:.4f}, p={sem_eps_moran['p_perm']:.4g}"
-        )
 
     summary = pd.DataFrame(summary_rows)
     coefficients = pd.DataFrame(coef_rows)
     effects = pd.DataFrame(effect_rows)
     moran = pd.DataFrame(moran_rows)
-    matches = pd.DataFrame(match_rows).drop_duplicates()
-
     summary.to_csv(OUT_ROOT / "sem_model_summary.csv", index=False, encoding="utf-8-sig")
     coefficients.to_csv(OUT_ROOT / "sem_coefficients_long.csv", index=False, encoding="utf-8-sig")
     effects.to_csv(OUT_ROOT / "sem_city_specific_effects_long.csv", index=False, encoding="utf-8-sig")
     moran.to_csv(OUT_ROOT / "sem_residual_moran_knn4.csv", index=False, encoding="utf-8-sig")
-    matches.to_csv(
-        OUT_ROOT / "model_sample_and_geometry_match.csv", index=False, encoding="utf-8-sig"
-    )
-
-    # Reviewer/SI-friendly compact table.
-    tab = effects.copy()
-    tab["OLS_HC1"] = [
-        f"{e:.4f}{p_to_star(p)}" for e, p in zip(tab["OLS_HC1_effect"], tab["OLS_HC1_p"])
-    ]
-    tab["SEM_KNN4"] = [
-        f"{e:.4f}{p_to_star(p)}" for e, p in zip(tab["SEM_effect"], tab["SEM_p"])
-    ]
-    tab = tab[[
-        "outcome", "family", "expansion", "city_level", "n",
-        "OLS_HC1", "SEM_KNN4", "sign_flip", "sig10_flip", "pct_change_abs",
-    ]]
-    tab.to_csv(OUT_ROOT / "Table_OLS_HC1_vs_SEM_city_effects.csv", index=False, encoding="utf-8-sig")
-
-    # Publication/SI-ready OLS-versus-SEM coefficient table.
-    # Keep beta, SE and exact P values in separate columns so the table can be
-    # copied directly into Supplementary Information without reconstructing
-    # estimates from the internal QC table above.
+    # Formatted OLS-versus-SEM coefficient table.
+    # Keep beta, SE and exact P values in separate columns.
     outcome_labels = {
         "accessibility": "Accessibility improvement",
         "gini": "Gini inequality change",
@@ -961,23 +889,27 @@ def main():
         float_format="%.6f",
     )
 
-    # Compact Word version for direct insertion into Supplementary Information.
+    # Compact Word version of the same comparison.
     write_supplementary_compact_docx(
         effects, OUT_ROOT / "Supplementary_Table_OLS_vs_SEM_compact.docx"
     )
 
-    readme = f"""Spatial-error robustness for fiscal-adjusted Stage-3 models\n\nPrimary OLS:\n  main regression HC1 models with baseline fiscal capacity {FISCAL_BASE_COL}.\n\nSpatial robustness:\n  Gaussian ML spatial error model, W = row-standardized KNN{K_NEIGHBORS}.\n  Same city samples and same mean specification as each Stage-3 OLS model.\n\nInterpretation:\n  The SEM evaluates whether SEE/CIE associations persist after explicitly modelling\n  residual spatial dependence. It does not solve non-spatial endogeneity and does not\n  establish causal effects.\n\nPost-SEM Moran diagnostic:\n  Use SEM_innovation_epsilon, not SEM_raw_residual_u. Under the SEM, the raw residual\n  u may be spatially correlated by construction; epsilon=(I-lambda W)u should not retain\n  substantial spatial autocorrelation if the error process is adequately captured.\n\nKey files:\n  sem_model_summary.csv\n  sem_city_specific_effects_long.csv\n  Table_OLS_HC1_vs_SEM_city_effects.csv\n    Internal/QC comparison with stars, sign-flip and magnitude-change diagnostics.\n  Supplementary_Table_OLS_vs_SEM_city_effects.csv\n    SI-ready table with separate beta, SE and exact P columns for OLS and SEM.\n  sem_residual_moran_knn4.csv\n"""
+    readme = f"""Spatial-error robustness for fiscal-adjusted Stage-3 models
+
+Model:
+  Gaussian maximum-likelihood spatial error model with row-standardized KNN{K_NEIGHBORS} weights.
+  Each SEM uses the same city sample and mean specification as the corresponding Stage-3 HC1 OLS model.
+
+Key files:
+  sem_model_summary.csv
+  sem_coefficients_long.csv
+  sem_city_specific_effects_long.csv
+  Supplementary_Table_OLS_vs_SEM_city_effects.csv
+  Supplementary_Table_OLS_vs_SEM_compact.docx
+  sem_residual_moran_knn4.csv
+"""
     (OUT_ROOT / "README.txt").write_text(readme, encoding="utf-8")
 
-    print("=" * 96)
-    print("Spatial-error robustness complete")
-    print(f"Output: {OUT_ROOT}")
-    if not summary.empty:
-        print(summary[[
-            "model", "n", "lambda", "lambda_p", "OLS_resid_moran_I",
-            "OLS_resid_moran_p", "SEM_innovation_moran_I", "SEM_innovation_moran_p",
-        ]].to_string(index=False))
-    print("=" * 96)
 
 
 if __name__ == "__main__":

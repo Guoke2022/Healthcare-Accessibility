@@ -349,4 +349,3 @@ if __name__ == "__main__":
     plt.savefig(out_png, dpi=PLOT_DPI, bbox_inches="tight")
     plt.close()
 
-    print("Saved combined long figure to:", out_png)

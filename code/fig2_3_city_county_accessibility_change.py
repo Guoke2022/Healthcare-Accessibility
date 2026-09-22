@@ -1,17 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Figure 2c-e: changes in median Ga2SFCA accessibility, 2014-2024.
+"""Figure 2c-e: changes in median Ga2SFCA accessibility, 2014–2024.
 
-The original plotting script merged annual province/city/county statistics by
-administrative-unit *name*.  That is unsafe for counties because many counties
-share the same name across China (for example, 市中区 or 鼓楼区), which can create
-many-to-many Cartesian matches across years.  Null administrative names can
-also match each other in ``pandas.merge`` and be counted as a pseudo-unit.
-
-This version uses stable administrative codes for province and county units,
-and the exact ``city_name_norm`` name universe used by the upstream city-level
-aggregation for city units.  All joins are validated as one-to-one, invalid
-placeholder units are excluded before counting, and map layers are constructed
-with the same analysis-unit definitions as the statistics.
+Province and county comparisons use stable administrative codes, while city
+comparisons use the normalized city-unit names from the upstream aggregation.
+Map layers use the same analysis-unit definitions as the summary statistics.
 """
 
 from __future__ import annotations
@@ -126,11 +118,10 @@ def _prepare_code_change_frame(
 def _prepare_city_change_frame() -> pd.DataFrame:
     """Build the city change table using the upstream ``city_name_norm`` key.
 
-    ``city_acc_stats.csv`` is aggregated upstream by ``city_name_norm`` and then
-    written with that key renamed to ``地级``.  ``地级码`` is not a unique key for
-    all analysis units: municipalities and directly administered county-level
-    units can legitimately carry code 0.  Therefore city comparisons must use
-    this normalized analysis-unit name, after excluding the null placeholder.
+    ``city_acc_stats.csv`` is aggregated upstream by ``city_name_norm`` and written
+    with that key renamed to ``地级``. Municipalities and directly administered
+    county-level units may carry code 0, so city comparisons use the normalized
+    analysis-unit name.
     """
     raw = read_stats("city", "accessibility")[["Year", "地级", "地级码", "pop_median"]].copy()
     raw["地级"] = _clean_name(raw["地级"])
@@ -415,7 +406,7 @@ def main() -> None:
         bins_count=17,
         x_ticks=[-20, -10, 0, 10, 20, 30, 40, 50],
         include_negative=True,
-        # Preserve the original display-range trimming used only for the inset
+        # Preserve the display-range trimming used for the inset
         # histogram.  Counts and map layers above use the full matched universe.
         plot_range=(-17, 35),
     )
