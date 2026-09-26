@@ -1,8 +1,4 @@
 # -*- coding = utf-8 -*-
-# @Author ：YEPEI
-# @Time : 2025/6/2 17:18
-
-# @Software : PyCharm
 
 import os
 import warnings
